@@ -85,6 +85,7 @@ const tablesViewEl    = document.getElementById('tablesView');
 const tablesListEl    = document.getElementById('tablesList');
 const tablesCountEl   = document.getElementById('tablesCount');
 const markdownActionsRowEl = document.getElementById('markdownActionsRow');
+const downloadXlsxBtn     = document.getElementById('downloadXlsxBtn');
 
 let loadedPrompts = [];
 let scrapeResult = null;
@@ -564,7 +565,12 @@ function insertIntoSidekick(text) {
   if (!ta) return { ok: false, reason: 'input-not-found' };
   const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
   setter.call(ta, text);
-  ta.dispatchEvent(new Event('input', { bubbles: true }));
+  // InputEvent is required for newer React versions; also dispatch change for older ones
+  ta.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true }));
+  ta.dispatchEvent(new Event('change', { bubbles: true }));
+  // Update the CSS data-value mirror used by the new Sidekick label wrapper
+  const label = ta.closest('label[data-value]');
+  if (label) label.setAttribute('data-value', text);
   ta.focus();
   return { ok: true };
 }
@@ -647,6 +653,7 @@ function wireExportControls() {
   errorRescanBtn.addEventListener('click', () => runScrape(includeReasoningEl.checked));
   copyBtn.addEventListener('click', onCopy);
   downloadBtn.addEventListener('click', onDownload);
+  downloadXlsxBtn.addEventListener('click', onDownloadXlsx);
   previewEl.addEventListener('input', updateCountReadout);
 }
 
@@ -1118,4 +1125,186 @@ function updateTablesView() {
 
     tablesListEl.appendChild(card);
   });
+}
+
+// ---------------------------------------------------------------------------
+// XLSX export (pure-JS stored-mode zip, no external dependencies)
+// ---------------------------------------------------------------------------
+
+function crc32(bytes) {
+  if (!crc32._table) {
+    const t = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+      let c = i;
+      for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[i] = c;
+    }
+    crc32._table = t;
+  }
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = crc32._table[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function u8enc(str) { return new TextEncoder().encode(str); }
+function le16(n) { return new Uint8Array([n & 0xFF, (n >> 8) & 0xFF]); }
+function le32(n) { const v = n >>> 0; return new Uint8Array([v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >> 24) & 0xFF]); }
+
+function concatU8(...arrays) {
+  const total = arrays.reduce((s, a) => s + a.length, 0);
+  const out = new Uint8Array(total);
+  let pos = 0;
+  for (const a of arrays) { out.set(a, pos); pos += a.length; }
+  return out;
+}
+
+function zipLocalEntry(name, data) {
+  const nb = u8enc(name);
+  const crc = crc32(data);
+  const sz = data.length;
+  return concatU8(
+    new Uint8Array([0x50,0x4B,0x03,0x04]), le16(20), le16(0), le16(0),
+    le16(0), le16(0), le32(crc), le32(sz), le32(sz),
+    le16(nb.length), le16(0), nb, data
+  );
+}
+
+function zipCentralEntry(name, data, offset) {
+  const nb = u8enc(name);
+  const crc = crc32(data);
+  const sz = data.length;
+  return concatU8(
+    new Uint8Array([0x50,0x4B,0x01,0x02]), le16(20), le16(20), le16(0), le16(0),
+    le16(0), le16(0), le32(crc), le32(sz), le32(sz),
+    le16(nb.length), le16(0), le16(0), le16(0), le16(0), le32(0), le32(offset), nb
+  );
+}
+
+function zipEnd(count, cdSize, cdOffset) {
+  return concatU8(
+    new Uint8Array([0x50,0x4B,0x05,0x06]),
+    le16(0), le16(0), le16(count), le16(count),
+    le32(cdSize), le32(cdOffset), le16(0)
+  );
+}
+
+function xmlEsc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function safeSheetName(name) {
+  return name.replace(/[\[\]:*?/\\]/g, '_').slice(0, 31);
+}
+
+function tableLinesToSheetXml(lines) {
+  const rows = lines
+    .filter((_, i) => i !== 1) // drop separator
+    .map(parseTableLine)
+    .map((cells) => cells.map(stripMarkdownEmphasis));
+
+  function colRef(c) {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    return c < 26 ? letters[c] : letters[Math.floor(c / 26) - 1] + letters[c % 26];
+  }
+
+  const sheetData = rows.map((cells, ri) =>
+    `<row r="${ri + 1}">${cells.map((val, ci) =>
+      `<c r="${colRef(ci)}${ri + 1}" t="inlineStr"><is><t>${xmlEsc(val)}</t></is></c>`
+    ).join('')}</row>`
+  ).join('');
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+    + `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
+    + `<sheetData>${sheetData}</sheetData></worksheet>`;
+}
+
+function buildXlsxBlob(tables) {
+  const names = (() => {
+    const seen = new Map();
+    return tables.map((t) => {
+      let base = safeSheetName(t.label || 'Sheet');
+      if (!seen.has(base)) { seen.set(base, 1); return base; }
+      const n = seen.get(base) + 1; seen.set(base, n);
+      const suf = `_${n}`; return base.slice(0, 31 - suf.length) + suf;
+    });
+  })();
+
+  const ctOverrides = tables.map((_, i) =>
+    `<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
+  ).join('');
+
+  const files = [
+    ['[Content_Types].xml',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+      + `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">`
+      + `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>`
+      + `<Default Extension="xml" ContentType="application/xml"/>`
+      + `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>`
+      + `<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>`
+      + ctOverrides + `</Types>`],
+    ['_rels/.rels',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+      + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`
+      + `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>`
+      + `</Relationships>`],
+    ['xl/workbook.xml',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+      + `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`
+      + `<sheets>${names.map((n, i) => `<sheet name="${xmlEsc(n)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets>`
+      + `</workbook>`],
+    ['xl/_rels/workbook.xml.rels',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+      + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`
+      + tables.map((_, i) =>
+          `<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`
+        ).join('')
+      + `</Relationships>`],
+    ['xl/styles.xml',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+      + `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
+      + `<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>`
+      + `<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>`
+      + `<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>`
+      + `<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>`
+      + `<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>`
+      + `</styleSheet>`],
+    ...tables.map((t, i) => [`xl/worksheets/sheet${i+1}.xml`, tableLinesToSheetXml(t.lines)]),
+  ];
+
+  const dataArrays = files.map(([, content]) => u8enc(content));
+  const locals = [];
+  let offset = 0;
+  const centrals = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const local = zipLocalEntry(files[i][0], dataArrays[i]);
+    locals.push(local);
+    centrals.push(zipCentralEntry(files[i][0], dataArrays[i], offset));
+    offset += local.length;
+  }
+
+  const cd = concatU8(...centrals);
+  return new Blob([concatU8(...locals, cd, zipEnd(files.length, cd.length, offset))], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+}
+
+function onDownloadXlsx() {
+  const tables = getAllTables();
+  if (!tables.length) {
+    showActionStatus('No tables found in the current selection.', true);
+    return;
+  }
+  const blob = buildXlsxBlob(tables);
+  const store = scrapeResult ? slugify(scrapeResult.storeHandle) : 'sidekick';
+  const filename = `${store}-tables-${formatExportedDateForFilename()}.xlsx`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showActionStatus(`Downloaded ${filename}`, false);
 }

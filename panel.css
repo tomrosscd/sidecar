@@ -763,6 +763,32 @@ textarea:focus-visible {
 }
 
 /* ---------------------------------------------------------------------- */
+/* Download All (.xlsx) button row                                         */
+/* ---------------------------------------------------------------------- */
+
+.download-xlsx-row {
+  flex-shrink: 0;
+  padding: 8px 0 0;
+}
+
+.btn-download-xlsx {
+  width: 100%;
+  background: var(--cv-dark-green);
+  color: var(--cv-off-white);
+  border: none;
+  border-radius: 6px;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+}
+
+.btn-download-xlsx:hover {
+  background: var(--cv-forest-green);
+}
+
+/* ---------------------------------------------------------------------- */
 /* Word / token count readout                                              */
 /* ---------------------------------------------------------------------- */
 
