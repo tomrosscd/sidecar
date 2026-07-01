@@ -60,7 +60,6 @@ body {
   font-weight: 400;
   color: var(--cv-black);
   background: var(--cv-off-white);
-  border-top: 2px solid var(--cv-dark-green);
 }
 
 /* ---------------------------------------------------------------------- */
