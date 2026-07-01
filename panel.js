@@ -90,7 +90,7 @@ const downloadXlsxBtn     = document.getElementById('downloadXlsxBtn');
 let loadedPrompts = [];
 let scrapeResult = null;
 let selectedIndices = new Set();
-let currentExportSubMode = 'latest';
+let currentExportSubMode = 'all';
 let currentExportSubView = 'markdown';
 let openPromptSlugs = new Set();
 let insertMessages = new Map(); // slug -> message string
@@ -559,16 +559,45 @@ function navigateToFollowUp(slug) {
 const SHOPIFY_TAB_PATTERN = /^https:\/\/(admin\.shopify\.com|[^/]+\.myshopify\.com)\//;
 
 function insertIntoSidekick(text) {
-  const ta = document.querySelector('textarea[name="sidekickMessage"]')
-          || document.querySelector('#sidekick textarea')
-          || document.querySelector('textarea[enterkeyhint="send"]');
+  const SELECTORS = [
+    'textarea[name="sidekickMessage"]',
+    'textarea[enterkeyhint="send"]',
+    '#sidekick textarea',
+  ];
+
+  function findIn(root) {
+    for (const sel of SELECTORS) {
+      try { const el = root.querySelector(sel); if (el) return el; } catch (e) {}
+    }
+    return null;
+  }
+
+  // Search main document first
+  let ta = findIn(document);
+
+  // Expanded Sidekick may be inside a dialog or overlay panel
+  if (!ta) {
+    for (const el of document.querySelectorAll('dialog, [role="dialog"], [class*="Modal"], [class*="Overlay"], [class*="Panel"]')) {
+      ta = findIn(el);
+      if (ta) break;
+    }
+  }
+
+  // Broad fallback: any textarea with the right attributes
+  if (!ta) {
+    for (const t of document.querySelectorAll('textarea')) {
+      if (t.getAttribute('name') === 'sidekickMessage' || t.getAttribute('enterkeyhint') === 'send') {
+        ta = t; break;
+      }
+    }
+  }
+
   if (!ta) return { ok: false, reason: 'input-not-found' };
+
   const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
   setter.call(ta, text);
-  // InputEvent is required for newer React versions; also dispatch change for older ones
   ta.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true }));
   ta.dispatchEvent(new Event('change', { bubbles: true }));
-  // Update the CSS data-value mirror used by the new Sidekick label wrapper
   const label = ta.closest('label[data-value]');
   if (label) label.setAttribute('data-value', text);
   ta.focus();
@@ -578,34 +607,50 @@ function insertIntoSidekick(text) {
 async function onInsertPrompt(slug, text) {
   insertMessages.delete(slug);
 
-  let tab;
+  // Collect candidate tabs: active tab first, then every other Shopify admin tab.
+  // Expanded Sidekick may be in a different window, so we try all matching tabs.
+  const candidates = [];
   try {
-    [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  } catch (e) {
-    tab = null;
-  }
+    const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (active && active.id && active.url && SHOPIFY_TAB_PATTERN.test(active.url)) {
+      candidates.push(active);
+    }
+  } catch (e) {}
 
-  if (!tab || !tab.id || !tab.url || !SHOPIFY_TAB_PATTERN.test(tab.url)) {
+  try {
+    const all = await chrome.tabs.query({});
+    for (const t of all) {
+      if (t.id && t.url && SHOPIFY_TAB_PATTERN.test(t.url) && !candidates.find(c => c.id === t.id)) {
+        candidates.push(t);
+      }
+    }
+  } catch (e) {}
+
+  if (!candidates.length) {
     insertMessages.set(slug, 'Open Sidekick on this tab to insert');
     renderPromptsList();
     return;
   }
 
-  try {
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: insertIntoSidekick,
-      args: [text],
-    });
-    const result = results && results[0] && results[0].result;
-    if (!result || !result.ok) {
-      insertMessages.set(slug, 'Open Sidekick on this tab to insert');
-    } else {
-      insertMessages.delete(slug);
+  for (const tab of candidates) {
+    try {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: insertIntoSidekick,
+        args: [text],
+      });
+      const result = results && results[0] && results[0].result;
+      if (result && result.ok) {
+        insertMessages.delete(slug);
+        renderPromptsList();
+        return;
+      }
+    } catch (e) {
+      // Try next candidate tab
     }
-  } catch (e) {
-    insertMessages.set(slug, 'Open Sidekick on this tab to insert');
   }
+
+  insertMessages.set(slug, 'Open Sidekick on this tab to insert');
   renderPromptsList();
 }
 
@@ -742,9 +787,9 @@ function onScrapeSuccess() {
 
   allCountEl.textContent = `(${exchanges.length})`;
 
-  currentExportSubMode = 'latest';
+  currentExportSubMode = 'all';
   selectedIndices = new Set();
-  document.querySelector('input[name="exportSubMode"][value="latest"]').checked = true;
+  document.querySelector('input[name="exportSubMode"][value="all"]').checked = true;
 
   onExportSubModeChange();
 }
