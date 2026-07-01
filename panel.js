@@ -816,6 +816,7 @@ function onExportSubViewChange() {
   markdownViewEl.hidden = currentExportSubView !== 'markdown';
   tablesViewEl.hidden = currentExportSubView !== 'tables';
   markdownActionsRowEl.hidden = currentExportSubView !== 'markdown';
+  downloadXlsxBtn.closest('.download-xlsx-row').hidden = currentExportSubView !== 'tables';
 }
 
 function truncate(text, max) {
