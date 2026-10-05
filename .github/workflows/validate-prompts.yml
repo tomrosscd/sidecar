@@ -1,0 +1,28 @@
+name: Validate prompts
+
+# prompts.json is fetched live by installed extensions and read by Sidecar Web at build time, so check
+# every change before it can reach main.
+on:
+  pull_request:
+    paths:
+      - prompts.json
+      - scripts/**
+      - .github/workflows/validate-prompts.yml
+  push:
+    branches: [main]
+    paths:
+      - prompts.json
+      - scripts/**
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate prompts.json
+        run: node scripts/validate-prompts.mjs
+      - name: Test the validator
+        run: node --test scripts/validate-prompts.test.mjs
