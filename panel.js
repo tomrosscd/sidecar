@@ -271,7 +271,7 @@ function updateCustomRangeInputs() {
 
 function getEffectiveTf() {
   if (settings.timeframe === 'custom') {
-    return settings.customTimeframe.trim() || 'the selected period';
+    return settings.customTimeframe.trim() || 'selected period';
   }
   return settings.timeframe;
 }
