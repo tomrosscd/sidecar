@@ -22,3 +22,6 @@ Desktop.ini
 # Raw prompt-library source (canonical copy lives on the website;
 # prompts.js is the synced, extension-shipped copy and stays tracked)
 sidekickpromptlibrary.html
+
+# Cloudflare Pages build output
+dist/
