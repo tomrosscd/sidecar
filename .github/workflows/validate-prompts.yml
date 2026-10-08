@@ -26,3 +26,7 @@ jobs:
         run: node scripts/validate-prompts.mjs
       - name: Test the validator
         run: node --test scripts/validate-prompts.test.mjs
+      - name: Test the site build
+        run: node --test scripts/build-site.test.mjs
+      - name: Build the site
+        run: node scripts/build-site.mjs
