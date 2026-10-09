@@ -110,9 +110,9 @@ The scraper only runs when you switch to Export mode or rescan. There is no pers
 
 ### The prompt data
 
-All prompts live in `prompts.json`. It is published at https://tomrosscd.github.io/sidecar/prompts.json (GitHub Pages serves `main`), and two things read it:
+All prompts live in `prompts.json`. It is published at https://convert-sidecar-prompts.pages.dev/prompts.json (Cloudflare Pages builds `main` and validates the file first). Until it is switched off, the old GitHub Pages copy at https://tomrosscd.github.io/sidecar/prompts.json is still read as a fallback. Two things read it:
 
-- **This extension** fetches the live file when the panel opens, caches it, and falls back to the copy bundled in the extension.
+- **This extension** (`prompts-source.js` lists the addresses) fetches the live file when the panel opens, trying each address in order, caches it, and falls back to the copy bundled in the extension.
 - **Sidecar Web** (https://tomrosscd.github.io/sidecar-web/, repo `tomrosscd/sidecar-web`) fetches it at build time. Run its "Deploy to GitHub Pages" workflow after you change prompts here, so the website picks the change up.
 
 Because installed extensions fetch the live file, **a bad edit reaches people straight away**. The extension rejects the whole file if any prompt is missing `slug`, `title`, `category`, `body`, or a `placeholders` array. Check every edit:
