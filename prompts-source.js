@@ -22,4 +22,13 @@ async function fetchRemotePayload(urls, isValid, fetchFn = fetch) {
   return null;
 }
 
-if (typeof module !== 'undefined') module.exports = { PROMPTS_URLS, fetchRemotePayload };
+/**
+ * True when the fetched payload's content differs from the cached one. Compares the JSON text, not the
+ * `updated` date or the prompt count, so a same-day correction with the same number of prompts still
+ * reaches cached users.
+ */
+function payloadChanged(cached, fetched) {
+  return !cached || JSON.stringify(cached) !== JSON.stringify(fetched);
+}
+
+if (typeof module !== 'undefined') module.exports = { PROMPTS_URLS, fetchRemotePayload, payloadChanged };

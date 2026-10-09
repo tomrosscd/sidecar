@@ -179,9 +179,9 @@ async function loadPromptsData() {
   try {
     const data = await fetchRemotePayload(PROMPTS_URLS, isValidPayload);
     if (data) {
-      const isNew = !cached || data.updated !== cached.updated || data.count !== cached.count;
-      if (isNew) {
-        await chrome.storage.local.set({ [CACHE_KEY]: data });
+      // Any valid fetched payload replaces the cache; the list re-renders only if the content differs.
+      await chrome.storage.local.set({ [CACHE_KEY]: data });
+      if (payloadChanged(cached, data)) {
         loadedPrompts = data.prompts;
         buildCategoryChips();
         renderPromptsList();
