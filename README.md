@@ -113,7 +113,7 @@ The scraper only runs when you switch to Export mode or rescan. There is no pers
 All prompts live in `prompts.json`. It is published at https://tomrosscd.github.io/sidecar/prompts.json (GitHub Pages serves `main`), and two things read it:
 
 - **This extension** fetches the live file when the panel opens, caches it, and falls back to the copy bundled in the extension.
-- **Sidecar Web** (https://tomrosscd.github.io/sidecar-web/, repo `tomrosscd/sidecar-web`) fetches it at build time. Run its "Deploy to GitHub Pages" workflow after you change prompts here, so the website picks the change up.
+- **Sidecar Web** (https://tomrosscd.github.io/sidecar-web/, repo `tomrosscd/sidecar-web`) fetches it at build time. After changing `prompts.json`, rebuild Sidecar Web (see its [RELEASE.md](https://github.com/tomrosscd/sidecar-web/blob/main/RELEASE.md)).
 
 Because installed extensions fetch the live file, **a bad edit reaches people straight away**. The extension rejects the whole file if any prompt is missing `slug`, `title`, `category`, `body`, or a `placeholders` array. Check every edit:
 
