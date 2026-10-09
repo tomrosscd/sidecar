@@ -124,7 +124,7 @@ node --test scripts/validate-prompts.test.mjs
 
 CI runs both on every pull request and push that touches `prompts.json`.
 
-**Bump `updated` on every edit.** The extension only replaces its cached copy when `updated` or `count` differs from the cached file, so an edit that changes neither is not picked up by installed copies.
+**Bump `updated` on every edit.** It records when the file last changed. The extension replaces its cached copy with any valid fetched file and redraws the list when the content differs, so even a same-day edit with the same number of prompts reaches installed copies.
 
 **Shape (schema 2).** `schema`, `updated` (YYYY-MM-DD), `count` (must equal the number of prompts), `prompts[]`, and an optional `collections[]`.
 
