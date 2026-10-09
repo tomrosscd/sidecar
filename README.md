@@ -124,6 +124,10 @@ node --test scripts/validate-prompts.test.mjs
 
 CI runs both on every pull request and push that touches `prompts.json`.
 
+**The feed is public.** Anyone can read the published file without signing in, so it may only hold public-safe prompts. The site build fails if any prompt or collection has a `visibility` other than `public`. Internal prompts need a separate signed-in source, which doesn't exist yet.
+
+After changing `prompts.json`, rebuild Sidecar Web (see its `RELEASE.md`).
+
 **Bump `updated` on every edit.** The extension only replaces its cached copy when `updated` or `count` differs from the cached file, so an edit that changes neither is not picked up by installed copies.
 
 **Shape (schema 2).** `schema`, `updated` (YYYY-MM-DD), `count` (must equal the number of prompts), `prompts[]`, and an optional `collections[]`.
@@ -136,7 +140,7 @@ CI runs both on every pull request and push that touches `prompts.json`.
 | `whenToUse`, `caveats` | No | Text. |
 | `useCases`, `dataSources` | No | Non-empty lists of text. |
 | `level` | No | `beginner`, `intermediate` or `advanced`. |
-| `visibility` | No | `public` or `internal`. Reserved for when login exists. Nothing reads it yet. |
+| `visibility` | No | `public` or `internal`. A missing one counts as `public`. The site build rejects `internal` (see above). |
 
 `{{TF}}` and `{{CMP}}` in a body are filled with the timeframe and comparison. **Collections** are `{ slug, title, description, promptSlugs[] }`, an ordered list of prompts for one job, shown as workflows on Sidecar Web.
 

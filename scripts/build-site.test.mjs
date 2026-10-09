@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { pathToFileURL } from 'node:url'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildSite } from './build-site.mjs'
+import { buildSite, publicFeedErrors } from './build-site.mjs'
 
 const repo = new URL('../', import.meta.url)
 const dir = () => pathToFileURL(mkdtempSync(`${tmpdir()}/sidecar-site-`) + '/')
@@ -36,4 +36,34 @@ test('refuses to build when prompts.json is invalid', () => {
   writeFileSync(new URL('privacy.html', root), '<p>x</p>')
   assert.throws(() => buildSite(root, new URL('dist/', root)), /problem/)
   assert.throws(() => readdirSync(new URL('dist/', root)))
+})
+
+const prompt = (extra = {}) => ({ slug: 'a', title: 'A', category: 'c', body: 'Body', placeholders: [], ...extra })
+const feed = (prompts, collections) => ({ schema: 2, updated: '2026-10-09', count: prompts.length, prompts, ...(collections && { collections }) })
+function rootWith(data) {
+  const root = dir()
+  writeFileSync(new URL('prompts.json', root), JSON.stringify(data))
+  writeFileSync(new URL('privacy.html', root), '<p>x</p>')
+  return root
+}
+
+test('builds a feed whose prompts are public or have no visibility', () => {
+  const root = rootWith(feed([prompt({ visibility: 'public' }), prompt({ slug: 'b' })]))
+  buildSite(root, new URL('dist/', root))
+  assert.ok(readdirSync(new URL('dist/', root)).includes('prompts.json'))
+})
+
+test('refuses to publish an internal prompt', () => {
+  const root = rootWith(feed([prompt(), prompt({ slug: 'b', visibility: 'internal' })]))
+  assert.throws(() => buildSite(root, new URL('dist/', root)), /prompts\[1\] \(b\).*"internal"/)
+  assert.throws(() => readdirSync(new URL('dist/', root)))
+})
+
+test('refuses to publish an internal collection', () => {
+  const root = rootWith(feed([prompt()], [{ slug: 'c', title: 'C', promptSlugs: ['a'], visibility: 'internal' }]))
+  assert.throws(() => buildSite(root, new URL('dist/', root)), /collections\[0\] \(c\)/)
+})
+
+test('the repo prompts.json passes the public-feed check', () => {
+  assert.deepEqual(publicFeedErrors(JSON.parse(readFileSync(new URL('prompts.json', repo), 'utf8'))), [])
 })
