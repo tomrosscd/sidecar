@@ -7,12 +7,16 @@ on:
     paths:
       - prompts.json
       - scripts/**
+      - prompts-source.js
+      - manifest.json
       - .github/workflows/validate-prompts.yml
   push:
     branches: [main]
     paths:
       - prompts.json
       - scripts/**
+      - prompts-source.js
+      - manifest.json
 
 jobs:
   validate:
@@ -26,6 +30,8 @@ jobs:
         run: node scripts/validate-prompts.mjs
       - name: Test the validator
         run: node --test scripts/validate-prompts.test.mjs
+      - name: Test the extension's prompt sources and permissions
+        run: node --test scripts/extension.test.mjs
       - name: Test the site build
         run: node --test scripts/build-site.test.mjs
       - name: Build the site

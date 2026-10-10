@@ -22,7 +22,6 @@ const DEFAULT_SETTINGS = {
   trimFollowups: true,
 };
 
-const PROMPTS_URL = 'https://tomrosscd.github.io/sidecar/prompts.json';
 const CACHE_KEY = 'sidecar_prompts_cache_v1';
 
 let settings = { ...DEFAULT_SETTINGS };
@@ -178,19 +177,16 @@ async function loadPromptsData() {
 
   let remoteFetched = false;
   try {
-    const res = await fetch(PROMPTS_URL, { cache: 'no-store' });
-    if (res.ok) {
-      const data = await res.json();
-      if (isValidPayload(data)) {
-        const isNew = !cached || data.updated !== cached.updated || data.count !== cached.count;
-        if (isNew) {
-          await chrome.storage.local.set({ [CACHE_KEY]: data });
-          loadedPrompts = data.prompts;
-          buildCategoryChips();
-          renderPromptsList();
-        }
-        remoteFetched = true;
+    const data = await fetchRemotePayload(PROMPTS_URLS, isValidPayload);
+    if (data) {
+      // Any valid fetched payload replaces the cache; the list re-renders only if the content differs.
+      await chrome.storage.local.set({ [CACHE_KEY]: data });
+      if (payloadChanged(cached, data)) {
+        loadedPrompts = data.prompts;
+        buildCategoryChips();
+        renderPromptsList();
       }
+      remoteFetched = true;
     }
   } catch (e) {}
 

@@ -110,10 +110,10 @@ The scraper only runs when you switch to Export mode or rescan. There is no pers
 
 ### The prompt data
 
-All prompts live in `prompts.json`. It is published at https://tomrosscd.github.io/sidecar/prompts.json (GitHub Pages serves `main`), and two things read it:
+All prompts live in `prompts.json`. It is published at https://convert-sidecar-prompts.pages.dev/prompts.json (Cloudflare Pages builds `main` and validates the file first). Until it is switched off, the old GitHub Pages copy at https://tomrosscd.github.io/sidecar/prompts.json is still read as a fallback. Two things read it:
 
-- **This extension** fetches the live file when the panel opens, caches it, and falls back to the copy bundled in the extension.
-- **Sidecar Web** (https://tomrosscd.github.io/sidecar-web/, repo `tomrosscd/sidecar-web`) fetches it at build time. Run its "Deploy to GitHub Pages" workflow after you change prompts here, so the website picks the change up.
+- **This extension** (`prompts-source.js` lists the addresses) fetches the live file when the panel opens, trying each address in order, caches it, and falls back to the copy bundled in the extension.
+- **Sidecar Web** (https://tomrosscd.github.io/sidecar-web/, repo `tomrosscd/sidecar-web`) fetches it at build time. After changing `prompts.json`, rebuild Sidecar Web (see its [RELEASE.md](https://github.com/tomrosscd/sidecar-web/blob/main/RELEASE.md)).
 
 Because installed extensions fetch the live file, **a bad edit reaches people straight away**. The extension rejects the whole file if any prompt is missing `slug`, `title`, `category`, `body`, or a `placeholders` array. Check every edit:
 
@@ -126,9 +126,7 @@ CI runs both on every pull request and push that touches `prompts.json`.
 
 **The feed is public.** Anyone can read the published file without signing in, so it may only hold public-safe prompts. The site build fails if any prompt or collection has a `visibility` other than `public`. Internal prompts need a separate signed-in source, which doesn't exist yet.
 
-After changing `prompts.json`, rebuild Sidecar Web (see its `RELEASE.md`).
-
-**Bump `updated` on every edit.** The extension only replaces its cached copy when `updated` or `count` differs from the cached file, so an edit that changes neither is not picked up by installed copies.
+**Bump `updated` on every edit.** It records when the file last changed. The extension replaces its cached copy with any valid fetched file and redraws the list when the content differs, so even a same-day edit with the same number of prompts reaches installed copies.
 
 **Shape (schema 2).** `schema`, `updated` (YYYY-MM-DD), `count` (must equal the number of prompts), `prompts[]`, and an optional `collections[]`.
 
