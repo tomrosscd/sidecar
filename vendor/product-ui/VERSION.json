@@ -1,0 +1,6 @@
+{
+  "package": "@convert/product-ui",
+  "version": "1.10.0",
+  "source": "dist/tokens.css from the built tarball (repo tomrosscd/cd-product-ui)",
+  "sha256": "d48253187b7a66e8a8fd7dd52d179ac6c17abf571078e9d40729be365862f4d4"
+}
