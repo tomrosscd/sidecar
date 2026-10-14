@@ -9,10 +9,10 @@ import { buildSite, publicFeedErrors } from './build-site.mjs'
 const repo = new URL('../', import.meta.url)
 const dir = () => pathToFileURL(mkdtempSync(`${tmpdir()}/sidecar-site-`) + '/')
 
-test('builds exactly the five site files', () => {
+test('builds exactly the site files', () => {
   const out = new URL('dist/', dir())
   buildSite(repo, out)
-  assert.deepEqual(readdirSync(out).sort(), ['_headers', 'privacy.html', 'prompts.json', 'robots.txt'].sort())
+  assert.deepEqual(readdirSync(out).sort(), ['_headers', 'great-cart-capture-privacy.html', 'privacy.html', 'prompts.json', 'robots.txt'].sort())
 })
 
 test('prompts.json is copied byte for byte', () => {
@@ -34,6 +34,7 @@ test('refuses to build when prompts.json is invalid', () => {
   const root = dir()
   writeFileSync(new URL('prompts.json', root), JSON.stringify({ schema: 2, updated: '2026-10-05', count: 1, prompts: [{ slug: 'a' }] }))
   writeFileSync(new URL('privacy.html', root), '<p>x</p>')
+  writeFileSync(new URL('great-cart-capture-privacy.html', root), '<p>x</p>')
   assert.throws(() => buildSite(root, new URL('dist/', root)), /problem/)
   assert.throws(() => readdirSync(new URL('dist/', root)))
 })
@@ -44,6 +45,7 @@ function rootWith(data) {
   const root = dir()
   writeFileSync(new URL('prompts.json', root), JSON.stringify(data))
   writeFileSync(new URL('privacy.html', root), '<p>x</p>')
+  writeFileSync(new URL('great-cart-capture-privacy.html', root), '<p>x</p>')
   return root
 }
 
