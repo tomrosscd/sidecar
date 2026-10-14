@@ -459,8 +459,8 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: var(--cui-focus-width) solid var(--cui-focus-colour);
-  outline-offset: var(--cui-focus-width);
+  outline: 2px solid var(--cui-focus-colour);
+  outline-offset: 2px;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -984,8 +984,8 @@ textarea:focus-visible {
 /* ---------------------------------------------------------------------- */
 
 @keyframes flash-border {
-  0%   { box-shadow: 0 0 0 var(--cui-focus-width) var(--cui-focus-colour); }
-  80%  { box-shadow: 0 0 0 var(--cui-focus-width) var(--cui-focus-colour); }
+  0%   { box-shadow: 0 0 0 2px var(--cui-focus-colour); }
+  80%  { box-shadow: 0 0 0 2px var(--cui-focus-colour); }
   100% { box-shadow: none; }
 }
 
