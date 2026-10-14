@@ -30,7 +30,7 @@
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
 }
 
 * { box-sizing: border-box; }
@@ -993,3 +993,7 @@ textarea:focus-visible {
   animation: flash-border 1.5s ease-out forwards;
 }
 
+
+[data-cui-theme="dark"] .search-input::-webkit-search-cancel-button {
+  filter: grayscale(1) invert(1) brightness(0.8);
+}
