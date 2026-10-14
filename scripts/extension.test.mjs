@@ -57,7 +57,7 @@ test('permissions are exactly those of 2.0.0', () => {
     'https://*.myshopify.com/*',
     'https://tomrosscd.github.io/*',
   ])
-  assert.equal(manifest.version, '2.1.0')
+  assert.equal(manifest.version, '2.1.1')
 })
 
 test('the panel loads the sources file before panel.js and no longer hard-codes a URL', () => {

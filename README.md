@@ -159,3 +159,11 @@ If the Sidekick input selector changes, update the selectors in `insertIntoSidek
 ## Sharing with others
 
 Zip the folder and have them follow the Install steps above. A Chrome Web Store listing is worth doing once it is ready for wider distribution.
+
+## Design tokens
+
+The panel is styled with Convert Product UI's generated CSS custom properties (`--cui-*`), vendored in `vendor/product-ui/tokens.css`. `vendor/product-ui/VERSION.json` records the Product UI version and a checksum. Only the tokens CSS is vendored: no React, no component CSS, nothing loaded from the network.
+
+To update: get the built tarball of a newer Product UI, then run `node scripts/update-tokens.mjs <path to convert-product-ui-X.Y.Z.tgz>`. Review the diff of `tokens.css`, load the panel and check it against the visual checklist in the PR that introduced the tokens. The package command must include `vendor`.
+
+Font: the panel keeps the bundled Darker Grotesque, falling back to Product UI's `--cui-font-sans`. Product UI's own font, Roobert, is licensed and not bundled here.
