@@ -41,7 +41,7 @@ export function buildSite(rootDir, outDir) {
 
   rmSync(outDir, { recursive: true, force: true })
   mkdirSync(outDir, { recursive: true })
-  for (const name of ['prompts.json', 'privacy.html']) copyFileSync(src(name), new URL(name, outDir))
+  for (const name of ['prompts.json', 'privacy.html', 'great-cart-capture-privacy.html']) copyFileSync(src(name), new URL(name, outDir))
   writeFileSync(new URL('_headers', outDir), HEADERS)
   writeFileSync(new URL('robots.txt', outDir), ROBOTS)
 }
