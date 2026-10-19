@@ -33,10 +33,10 @@ Two top-level modes:
 
 ### Prompts mode
 
-Browse the built-in prompt library (Convert's own prompts plus Shopify's supplied set).
+Browse the prompt library. The prompts are loaded from `prompts.json` (see [The prompt data](#the-prompt-data)).
 
 - **Timeframe / comparison:** choose a period (last 7–90 days, last quarter, last 6/12 months) and a comparison (previous period, same period last year, or none). These get substituted into the prompt text.
-- **Category / source filters:** narrow by category (CRO, LTV, BFCM, Strategy, Acquisition, SEO, Subscriptions, Tech) or source (Convert vs Shopify), each with a live count.
+- **Category filter:** narrow by category (Acquisition, Analytics, BFCM, CRO, LTV, SEO, Strategy, Subscriptions, Tech, UX), each with a live count.
 - **Search:** matches prompt titles and descriptions.
 - Click a prompt to expand it. The built prompt shows with the timeframe highlighted in yellow and the comparison highlighted in green.
 - **Insert:** writes the built prompt into the open Sidekick conversation's input box (focused, not sent). If Sidekick isn't open on the active tab, you'll see an inline message instead.
@@ -99,18 +99,50 @@ Mode, timeframe, comparison, category, source, the reasoning toggle, and the tri
 | File | What it does |
 |---|---|
 | `panel.js` | Side panel controller: mode switching, prompts UI, export UI, scraper injection, Copy/Download, CSV export |
-| `prompts.js` | The prompt library data (`PROMPTS`) and the DOM-free `buildPrompt`/`getCmpText` helpers |
+| `prompts.json` | The prompt library data. See [The prompt data](#the-prompt-data) |
+| `prompts.js` | The DOM-free `buildPrompt`/`getCmpText` helpers (no prompt data) |
+| `scripts/validate-prompts.mjs` | Checks `prompts.json`. Runs in CI on every change |
 | `background.js` | MV3 service worker — opens the side panel on toolbar click |
 | `scraper.js` | Runs inside the page, finds the Sidekick log, scrolls it fully, groups nodes into exchanges |
 | `parser.js` | Handles all DOM-to-Markdown conversion and selector logic |
 
 The scraper only runs when you switch to Export mode or rescan. There is no persistent content script.
 
-### Keeping `prompts.js` in sync with the website
+### The prompt data
 
-`prompts.js` is extracted verbatim from the prompt-library website's `PROMPTS` array, with `buildPrompt` and `getCmpText` refactored to take explicit `(timeframe, comparison)` arguments instead of reading a global `state` object, so the file is DOM-free and works in both places.
+All prompts live in `prompts.json`. It is published at https://convert-sidecar-prompts.pages.dev/prompts.json (Cloudflare Pages builds `main` and validates the file first). Until it is switched off, the old GitHub Pages copy at https://tomrosscd.github.io/sidecar/prompts.json is still read as a fallback. Two things read it:
 
-If you edit prompts here, copy `prompts.js` back into the website project and update its calls to the explicit-argument signature (the website previously called `buildPrompt(p)` / `getCmpText()` against a global `state`). Both projects should always carry the same `prompts.js`.
+- **This extension** (`prompts-source.js` lists the addresses) fetches the live file when the panel opens, trying each address in order, caches it, and falls back to the copy bundled in the extension.
+- **Sidecar Web** (https://tomrosscd.github.io/sidecar-web/, repo `tomrosscd/sidecar-web`) fetches it at build time. After changing `prompts.json`, rebuild Sidecar Web (see its [RELEASE.md](https://github.com/tomrosscd/sidecar-web/blob/main/RELEASE.md)).
+
+Because installed extensions fetch the live file, **a bad edit reaches people straight away**. The extension rejects the whole file if any prompt is missing `slug`, `title`, `category`, `body`, or a `placeholders` array. Check every edit:
+
+```sh
+node scripts/validate-prompts.mjs
+node --test scripts/validate-prompts.test.mjs
+```
+
+CI runs both on every pull request and push that touches `prompts.json`.
+
+**The feed is public.** Anyone can read the published file without signing in, so it may only hold public-safe prompts. The site build fails if any prompt or collection has a `visibility` other than `public`. Internal prompts need a separate signed-in source, which doesn't exist yet.
+
+**Bump `updated` on every edit.** It records when the file last changed. The extension replaces its cached copy with any valid fetched file and redraws the list when the content differs, so even a same-day edit with the same number of prompts reaches installed copies.
+
+**Shape (schema 2).** `schema`, `updated` (YYYY-MM-DD), `count` (must equal the number of prompts), `prompts[]`, and an optional `collections[]`.
+
+| Prompt field | Needed? | Notes |
+|---|---|---|
+| `slug`, `title`, `category`, `body` | Yes | Non-empty text. `slug` is lower-case words joined by hyphens and unique. |
+| `placeholders` | Yes | A list, `[]` if none. Every `[Bracketed]` token in `body` must be listed, and every listed one must appear in `body`. |
+| `description`, `featured`, `recommended`, `followUp` | No | `followUp` is another prompt's slug, or `null`. |
+| `whenToUse`, `caveats` | No | Text. |
+| `useCases`, `dataSources` | No | Non-empty lists of text. |
+| `level` | No | `beginner`, `intermediate` or `advanced`. |
+| `visibility` | No | `public` or `internal`. A missing one counts as `public`. The site build rejects `internal` (see above). |
+
+`{{TF}}` and `{{CMP}}` in a body are filled with the timeframe and comparison. **Collections** are `{ slug, title, description, promptSlugs[] }`, an ordered list of prompts for one job, shown as workflows on Sidecar Web.
+
+**Keep changes additive.** Older installed extensions only understand the original fields. They ignore extra fields and extra top-level keys, so adding is safe. Renaming or removing a field, or changing a required one, would break people who have not updated.
 
 ---
 
@@ -127,3 +159,11 @@ If the Sidekick input selector changes, update the selectors in `insertIntoSidek
 ## Sharing with others
 
 Zip the folder and have them follow the Install steps above. A Chrome Web Store listing is worth doing once it is ready for wider distribution.
+
+## Design tokens
+
+The panel is styled with Convert Product UI's generated CSS custom properties (`--cui-*`), vendored in `vendor/product-ui/tokens.css`. `vendor/product-ui/VERSION.json` records the Product UI version and a checksum. Only the tokens CSS is vendored: no React, no component CSS, nothing loaded from the network.
+
+To update: get the built tarball of a newer Product UI, then run `node scripts/update-tokens.mjs <path to convert-product-ui-X.Y.Z.tgz>`. Review the diff of `tokens.css`, load the panel and check it against the visual checklist in the PR that introduced the tokens. The package command must include `vendor`.
+
+Font: the panel keeps the bundled Darker Grotesque, falling back to Product UI's `--cui-font-sans`. Product UI's own font, Roobert, is licensed and not bundled here.

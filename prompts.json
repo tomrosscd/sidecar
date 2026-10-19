@@ -1,6 +1,6 @@
 {
-  "schema": 1,
-  "updated": "2026-06-19",
+  "schema": 2,
+  "updated": "2026-10-05",
   "count": 74,
   "prompts": [
     {
@@ -12,7 +12,17 @@
       "placeholders": [],
       "featured": true,
       "recommended": true,
-      "followUp": "funnel-and-checkout-performance"
+      "followUp": "funnel-and-checkout-performance",
+      "whenToUse": "Use at the start of a CRO audit or monthly review. Ideal for building a client-facing summary that flags the most impactful opportunities without overwhelming detail.",
+      "useCases": [
+        "Monthly reporting",
+        "Client presentation",
+        "Post launch"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "funnel-and-checkout-performance",
@@ -23,7 +33,18 @@
       "placeholders": [],
       "featured": true,
       "recommended": true,
-      "followUp": "cart-abandonment-deep-dive"
+      "followUp": "cart-abandonment-deep-dive",
+      "whenToUse": "When checkout abandonment is high or you need to identify where in the purchase funnel you are losing customers. Essential for CRO audits.",
+      "useCases": [
+        "Post launch",
+        "Issue investigation",
+        "Monthly reporting"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "GA4"
+      ],
+      "level": "advanced"
     },
     {
       "slug": "product-and-merchandising-performance",
@@ -34,7 +55,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": true,
-      "followUp": "product-detail-page-ux-diagnosis"
+      "followUp": "product-detail-page-ux-diagnosis",
+      "whenToUse": "When analysing which products are underperforming relative to their traffic, or when reviewing the effectiveness of your current merchandising and collection structure.",
+      "useCases": [
+        "Post launch",
+        "Issue investigation",
+        "Opportunity discovery"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "device-and-channel-efficiency",
@@ -45,7 +76,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When you suspect mobile or a specific traffic source is underperforming, or when preparing recommendations to improve channel-specific conversion efficiency.",
+      "useCases": [
+        "Post launch",
+        "Issue investigation",
+        "Weekly review"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "GA4"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "customer-segment-performance",
@@ -56,7 +98,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": true,
-      "followUp": "rfm-segmentation-and-action-plan"
+      "followUp": "rfm-segmentation-and-action-plan",
+      "whenToUse": "When you want to understand how different customer types are performing and identify where to invest in conversion, retention, or AOV improvements by segment.",
+      "useCases": [
+        "Monthly reporting",
+        "Opportunity discovery",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "discount-and-promotion-impact",
@@ -67,7 +119,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "contribution-margin-after-discounts-and-returns"
+      "followUp": "contribution-margin-after-discounts-and-returns",
+      "whenToUse": "When you need to understand whether your promotional strategy is genuinely growing revenue or just training customers to wait for discounts. Useful before planning the next promotional calendar.",
+      "useCases": [
+        "Monthly reporting",
+        "Issue investigation",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "shopify-benchmark-review",
@@ -78,7 +140,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When onboarding a new client or starting a CRO engagement. Sets a baseline understanding of where the store stands before deeper analysis begins.",
+      "useCases": [
+        "Post launch",
+        "Client presentation",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "beginner"
     },
     {
       "slug": "homepage-and-entry-page-performance",
@@ -89,7 +161,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "navigation-and-site-architecture-review"
+      "followUp": "navigation-and-site-architecture-review",
+      "whenToUse": "When reviewing homepage effectiveness or investigating high early-funnel drop-off. Useful after a homepage redesign or promotional refresh.",
+      "useCases": [
+        "Post launch",
+        "Issue investigation",
+        "Qa validation"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "GA4"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "cart-abandonment-deep-dive",
@@ -100,7 +183,18 @@
       "placeholders": [],
       "featured": true,
       "recommended": false,
-      "followUp": "abandoned-checkout-recovery-optimisation"
+      "followUp": "abandoned-checkout-recovery-optimisation",
+      "whenToUse": "When cart abandonment rates are higher than expected or you need to identify the specific friction points preventing customers from completing checkout.",
+      "useCases": [
+        "Issue investigation",
+        "Post launch",
+        "Opportunity discovery"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "GA4"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "collection-and-category-performance",
@@ -111,7 +205,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When reviewing your product catalogue structure or investigating why certain categories are driving strong traffic but weak sales.",
+      "useCases": [
+        "Post launch",
+        "Opportunity discovery",
+        "Monthly reporting"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "search-and-navigation-behaviour",
@@ -122,7 +226,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "collection-and-plp-merchandising-and-ux-review"
+      "followUp": "collection-and-plp-merchandising-and-ux-review",
+      "whenToUse": "When investigating product discoverability issues or when search is suspected as a conversion lever. Particularly useful when customers frequently search for products that exist but are not easily found.",
+      "useCases": [
+        "Opportunity discovery",
+        "Issue investigation",
+        "Post launch"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "GA4"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "customer-lifetime-value-analysis",
@@ -133,7 +248,17 @@
       "placeholders": [],
       "featured": true,
       "recommended": false,
-      "followUp": "rfm-segmentation-and-action-plan"
+      "followUp": "rfm-segmentation-and-action-plan",
+      "whenToUse": "When assessing customer retention health or building a business case for LTV-focused investment. Key for monthly reporting and strategic reviews.",
+      "useCases": [
+        "Monthly reporting",
+        "Opportunity discovery",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "repeat-purchase-cadence-and-cohort-patterns",
@@ -144,7 +269,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "second-purchase-conversion-strategy"
+      "followUp": "second-purchase-conversion-strategy",
+      "whenToUse": "When you need to understand the timing and velocity of repeat purchases to inform email flows, loyalty mechanics, or retention campaign timing.",
+      "useCases": [
+        "Monthly reporting",
+        "Opportunity discovery",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "advanced"
     },
     {
       "slug": "high-value-customer-identification",
@@ -155,7 +290,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "rfm-segmentation-and-action-plan"
+      "followUp": "rfm-segmentation-and-action-plan",
+      "whenToUse": "When developing VIP or loyalty strategies, or when you need to identify which products and channels are most effective at attracting your most valuable customers.",
+      "useCases": [
+        "Opportunity discovery",
+        "Internal strategy",
+        "Client presentation"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "bfcm-performance-debrief",
@@ -166,7 +311,17 @@
       "placeholders": [],
       "featured": true,
       "recommended": false,
-      "followUp": "peak-period-vs-baseline-comparison"
+      "followUp": "peak-period-vs-baseline-comparison",
+      "whenToUse": "Immediately after BFCM or any major peak trading period. Use to debrief what worked, quantify the commercial impact, and set priorities for the next campaign.",
+      "useCases": [
+        "Trading review",
+        "Post launch",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "peak-period-vs-baseline-comparison",
@@ -177,7 +332,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When you need to determine whether a promotional period genuinely grew the business or simply pulled forward future demand. Critical for evaluating ROI on discounting.",
+      "useCases": [
+        "Trading review",
+        "Post launch",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "advanced"
     },
     {
       "slug": "paid-vs-organic-traffic-quality",
@@ -188,7 +353,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "attribution-and-channel-assist-analysis"
+      "followUp": "attribution-and-channel-assist-analysis",
+      "whenToUse": "When reviewing paid media spend efficiency or before a quarterly marketing budget review. Useful for identifying channels that generate volume but underperform on conversion quality.",
+      "useCases": [
+        "Monthly reporting",
+        "Internal strategy",
+        "Opportunity discovery"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "GA4"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "new-customer-acquisition-analysis",
@@ -199,7 +375,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "attribution-and-channel-assist-analysis"
+      "followUp": "attribution-and-channel-assist-analysis",
+      "whenToUse": "When the business needs to understand the health of its new customer pipeline and identify what products or channels are most effective as acquisition drivers.",
+      "useCases": [
+        "Monthly reporting",
+        "Opportunity discovery",
+        "Post launch"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "GA4"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "returns-and-refund-impact-analysis",
@@ -210,7 +397,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "contribution-margin-after-discounts-and-returns"
+      "followUp": "contribution-margin-after-discounts-and-returns",
+      "whenToUse": "When refund rates are high or increasing, or when you need to understand the commercial impact of your returns policy on net revenue.",
+      "useCases": [
+        "Monthly reporting",
+        "Issue investigation",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "inventory-and-stockout-risk",
@@ -221,7 +418,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "Before peak periods or when conversion drops are suspected to be related to out-of-stock variants. Also useful for ongoing inventory health monitoring.",
+      "useCases": [
+        "Pre launch",
+        "Trading review",
+        "Issue investigation"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "geographic-revenue-distribution",
@@ -232,7 +439,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When exploring international expansion opportunities or when you need to understand whether certain markets warrant specific localisation or promotional investment.",
+      "useCases": [
+        "Opportunity discovery",
+        "Internal strategy",
+        "Monthly reporting"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "seo-driven-revenue-analysis",
@@ -243,7 +460,19 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "seo-keyword-opportunity-finder"
+      "followUp": "seo-keyword-opportunity-finder",
+      "whenToUse": "When assessing whether SEO is a meaningful revenue channel or when identifying which product and collection pages have the most organic traffic potential.",
+      "useCases": [
+        "Monthly reporting",
+        "Opportunity discovery",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "GA4",
+        "Google Search Console"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "email-channel-revenue-analysis",
@@ -254,7 +483,19 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "lapsed-customer-winback-analysis"
+      "followUp": "lapsed-customer-winback-analysis",
+      "whenToUse": "When reviewing your email programme performance or preparing a recommendation on where to invest in email flow improvements.",
+      "useCases": [
+        "Monthly reporting",
+        "Opportunity discovery",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Klaviyo",
+        "Shopify Email"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "post-purchase-flow-effectiveness",
@@ -265,7 +506,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When optimising for repeat purchase rate or when evaluating the effectiveness of post-purchase email flows and upsell mechanics.",
+      "useCases": [
+        "Opportunity discovery",
+        "Monthly reporting",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Klaviyo"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "price-point-and-margin-health-check",
@@ -276,7 +528,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "contribution-margin-after-discounts-and-returns"
+      "followUp": "contribution-margin-after-discounts-and-returns",
+      "whenToUse": "When developing pricing strategy recommendations or when AOV is below target and you need to understand whether pricing structure is contributing to the issue.",
+      "useCases": [
+        "Internal strategy",
+        "Opportunity discovery",
+        "Monthly reporting"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "advanced"
     },
     {
       "slug": "seasonal-trading-pattern-analysis",
@@ -287,7 +549,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When building a 12-month trading calendar or planning promotional and inventory investment for the year ahead. Useful for aligning the client team on peak periods and category seasonality.",
+      "useCases": [
+        "Internal strategy",
+        "Trading review",
+        "Pre launch"
+      ],
+      "dataSources": [
+        "Shopify Analytics"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "mobile-conversion-gap-analysis",
@@ -298,7 +570,20 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "mobile-checkout-friction-audit"
+      "followUp": "mobile-checkout-friction-audit",
+      "whenToUse": "When mobile accounts for the majority of sessions but conversion significantly lags desktop. Essential for stores with high social or paid social traffic.",
+      "useCases": [
+        "Issue investigation",
+        "Post launch",
+        "Qa validation"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "GA4",
+        "Hotjar",
+        "Microsoft Clarity"
+      ],
+      "level": "advanced"
     },
     {
       "slug": "30-30-30-store-analysis",
@@ -309,7 +594,18 @@
       "placeholders": [],
       "featured": true,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "A reliable monthly review format. Use when you want a structured, comparable view of store performance across three time periods in a single pass.",
+      "useCases": [
+        "Monthly reporting",
+        "Trading review",
+        "Client presentation"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "beginner"
     },
     {
       "slug": "abandoned-checkout-recovery-optimisation",
@@ -320,7 +616,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When checkout abandonment is a known problem or when optimising checkout flow ahead of a peak period.",
+      "useCases": [
+        "Issue investigation",
+        "Post launch",
+        "Opportunity discovery"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "acquisition-channel-performance-summary",
@@ -331,7 +638,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "paid-media-efficiency-by-channel"
+      "followUp": "paid-media-efficiency-by-channel",
+      "whenToUse": "During paid media performance reviews or when planning quarterly acquisition budget allocation.",
+      "useCases": [
+        "Monthly reporting",
+        "Internal strategy",
+        "Opportunity discovery"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "aov-cvr-correlation-analysis",
@@ -342,7 +660,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "free-shipping-threshold-optimisation"
+      "followUp": "free-shipping-threshold-optimisation",
+      "whenToUse": "When analysing the trade-off between pricing strategy and conversion rate, or when building a pricing model recommendation for a client.",
+      "useCases": [
+        "Internal strategy",
+        "Opportunity discovery",
+        "Monthly reporting"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "advanced"
     },
     {
       "slug": "app-vs-native-shopify-functionality-audit",
@@ -353,7 +682,16 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When onboarding a new client, doing a tech stack review, or when app costs are becoming a concern. Also useful ahead of a platform upgrade or replatforming project.",
+      "useCases": [
+        "Internal strategy",
+        "Onboarding"
+      ],
+      "dataSources": [
+        "Shopify Admin"
+      ],
+      "level": "beginner"
     },
     {
       "slug": "audience-overlap-evaluation",
@@ -364,7 +702,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When optimising paid social campaigns using Shopify Audiences, particularly for US-based stores looking to improve ROAS through better audience targeting.",
+      "caveats": "Shopify Audiences is currently only available to US merchants.",
+      "useCases": [
+        "Internal strategy",
+        "Opportunity discovery"
+      ],
+      "dataSources": [
+        "Shopify Audiences",
+        "Shopify Analytics"
+      ],
+      "level": "advanced"
     },
     {
       "slug": "bot-traffic-detection-report",
@@ -375,7 +724,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When conversion rates are unexpectedly low despite high session volumes, or when investigating unusual traffic spikes that do not result in sales.",
+      "useCases": [
+        "Qa validation",
+        "Issue investigation"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "GA4"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "buyer-progression-trend-analysis",
@@ -386,7 +745,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When building a customer journey strategy or when you want to understand what drives customers to move from one-time buyers to loyal repeat purchasers.",
+      "useCases": [
+        "Monthly reporting",
+        "Opportunity discovery",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "campaign-tactic-effectiveness-breakdown",
@@ -399,7 +769,19 @@
       ],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "After completing a major campaign to understand true incremental impact and inform future campaign strategy.",
+      "caveats": "Replace [Campaign Name] with the actual campaign name before using.",
+      "useCases": [
+        "Post launch",
+        "Trading review",
+        "Client presentation"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "advanced"
     },
     {
       "slug": "checkout-funnel-drop-off-analysis",
@@ -410,7 +792,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "mobile-checkout-friction-audit"
+      "followUp": "mobile-checkout-friction-audit",
+      "whenToUse": "When investigating low checkout completion rates or preparing a Shopify-specific checkout optimisation recommendation.",
+      "useCases": [
+        "Issue investigation",
+        "Post launch",
+        "Opportunity discovery"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "customer-journey-funnel-drop-off-analysis",
@@ -421,7 +814,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "conversion-hypothesis-builder"
+      "followUp": "conversion-hypothesis-builder",
+      "whenToUse": "When conducting a full-funnel CRO audit and you need to identify the highest-priority drop-off points across the entire customer journey.",
+      "useCases": [
+        "Issue investigation",
+        "Post launch"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "GA4"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "customer-lifetime-value-opportunity-finder",
@@ -432,7 +835,18 @@
       "placeholders": [],
       "featured": true,
       "recommended": false,
-      "followUp": "second-purchase-conversion-strategy"
+      "followUp": "second-purchase-conversion-strategy",
+      "whenToUse": "When building a CLV improvement roadmap or preparing a strategic recommendation on where to focus LTV investment.",
+      "useCases": [
+        "Opportunity discovery",
+        "Internal strategy",
+        "Monthly reporting"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "frequently-bought-together-and-bundle-pricing",
@@ -443,7 +857,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When developing a bundling strategy or when looking for AOV improvement opportunities through complementary product pairings.",
+      "useCases": [
+        "Opportunity discovery",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "advanced"
     },
     {
       "slug": "high-value-customer-cohort-analysis",
@@ -454,7 +878,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When developing a retention and loyalty strategy, particularly when churn among high-value customers is a concern.",
+      "useCases": [
+        "Monthly reporting",
+        "Internal strategy",
+        "Opportunity discovery"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "advanced"
     },
     {
       "slug": "holiday-sales-forecast-and-bfcm-readiness",
@@ -465,7 +900,19 @@
       "placeholders": [],
       "featured": true,
       "recommended": false,
-      "followUp": "site-speed-and-traffic-surge-readiness"
+      "followUp": "site-speed-and-traffic-surge-readiness",
+      "whenToUse": "In the 30–60 days before BFCM to forecast potential revenue, identify inventory gaps, and prepare promotional and email strategy.",
+      "useCases": [
+        "Pre launch",
+        "Trading review",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports",
+        "Klaviyo"
+      ],
+      "level": "advanced"
     },
     {
       "slug": "last-year-performance-audit",
@@ -476,7 +923,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "For annual or quarterly strategic reviews. Excellent for identifying patterns from the previous year to inform the next planning cycle.",
+      "useCases": [
+        "Monthly reporting",
+        "Trading review",
+        "Client presentation"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "beginner"
     },
     {
       "slug": "multi-item-purchase-and-cross-sell-opportunity",
@@ -487,7 +945,17 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "frequently-bought-together-and-bundle-pricing"
+      "followUp": "frequently-bought-together-and-bundle-pricing",
+      "whenToUse": "When looking to increase AOV through cross-sell or bundle mechanics, or when reviewing merchandising strategy.",
+      "useCases": [
+        "Opportunity discovery",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "recurring-sale-performance-and-recommendations",
@@ -502,7 +970,19 @@
       ],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "After a recurring sale event (e.g. mid-year sale, Boxing Day) to analyse what worked and optimise for the next occurrence.",
+      "caveats": "Replace [Campaign Name], [Start Date], and [End Date] with your actual campaign details before using.",
+      "useCases": [
+        "Trading review",
+        "Post launch",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "seo-keyword-opportunity-finder",
@@ -513,7 +993,19 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "seo-opportunity-audit"
+      "followUp": "seo-opportunity-audit",
+      "whenToUse": "When starting an SEO programme or identifying quick-win keyword opportunities for product and collection pages.",
+      "useCases": [
+        "Opportunity discovery",
+        "Internal strategy",
+        "Post launch"
+      ],
+      "dataSources": [
+        "Google Search Console",
+        "GA4",
+        "Shopify Analytics"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "seo-opportunity-audit",
@@ -524,7 +1016,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "seo-driven-revenue-analysis"
+      "followUp": "seo-driven-revenue-analysis",
+      "whenToUse": "When onboarding a new client for SEO or when conducting an initial SEO health check to identify the highest-priority improvements.",
+      "useCases": [
+        "Onboarding",
+        "Opportunity discovery",
+        "Post launch"
+      ],
+      "dataSources": [
+        "Shopify Admin",
+        "Google Search Console"
+      ],
+      "level": "beginner"
     },
     {
       "slug": "site-speed-and-traffic-surge-readiness",
@@ -537,7 +1040,18 @@
       ],
       "featured": false,
       "recommended": false,
-      "followUp": "store-technical-issue-diagnosis"
+      "followUp": "store-technical-issue-diagnosis",
+      "whenToUse": "In the 4–6 weeks before a major trading period to identify and resolve technical issues before traffic spikes.",
+      "caveats": "Replace [BFCM dates] with your specific dates before using.",
+      "useCases": [
+        "Pre launch",
+        "Qa validation"
+      ],
+      "dataSources": [
+        "Shopify Admin",
+        "Google PageSpeed"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "slow-moving-sku-strategy-planner",
@@ -548,7 +1062,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When managing working capital, ahead of a clearance sale, or when preparing inventory for a peak trading period.",
+      "useCases": [
+        "Trading review",
+        "Internal strategy",
+        "Opportunity discovery"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "advanced"
     },
     {
       "slug": "social-roas-and-engagement-analysis",
@@ -559,7 +1084,19 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "paid-media-efficiency-by-channel"
+      "followUp": "paid-media-efficiency-by-channel",
+      "whenToUse": "During social media performance reviews or when optimising paid social creative and remarketing strategy.",
+      "useCases": [
+        "Monthly reporting",
+        "Internal strategy",
+        "Opportunity discovery"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Facebook Ads",
+        "Google Ads"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "store-technical-issue-diagnosis",
@@ -570,7 +1107,19 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "site-speed-and-traffic-surge-readiness"
+      "followUp": "site-speed-and-traffic-surge-readiness",
+      "whenToUse": "When a store is experiencing unexplained performance drops, slow page loads, or before a major theme or platform update.",
+      "useCases": [
+        "Qa validation",
+        "Onboarding",
+        "Issue investigation"
+      ],
+      "dataSources": [
+        "Shopify Admin",
+        "Google PageSpeed",
+        "Shopify Analytics"
+      ],
+      "level": "intermediate"
     },
     {
       "slug": "subscription-conversion-potential-analysis",
@@ -581,7 +1130,18 @@
       "placeholders": [],
       "featured": false,
       "recommended": false,
-      "followUp": "subscription-churn-and-retention-analysis"
+      "followUp": "subscription-churn-and-retention-analysis",
+      "whenToUse": "When evaluating whether to invest in a subscription model or subscription-specific landing page for repeat-purchase products.",
+      "caveats": "Requires Shopify Subscriptions or a subscription app to be active on the store.",
+      "useCases": [
+        "Opportunity discovery",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Subscriptions"
+      ],
+      "level": "advanced"
     },
     {
       "slug": "summer-sale-campaign-creator",
@@ -594,7 +1154,18 @@
       ],
       "featured": false,
       "recommended": false,
-      "followUp": null
+      "followUp": null,
+      "whenToUse": "When planning a seasonal sale campaign and needing to develop the messaging framework, channel strategy, and product priority list quickly.",
+      "caveats": "Replace [Collection Name] with your actual collection or product range before using.",
+      "useCases": [
+        "Pre launch",
+        "Internal strategy"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "beginner"
     },
     {
       "slug": "ultimate-bfcm-performance-and-readiness",
@@ -605,7 +1176,19 @@
       "placeholders": [],
       "featured": true,
       "recommended": true,
-      "followUp": "site-speed-and-traffic-surge-readiness"
+      "followUp": "site-speed-and-traffic-surge-readiness",
+      "whenToUse": "The most comprehensive BFCM prompt. Use in the weeks before BFCM for strategic planning, or in the weeks after for a full debrief.",
+      "useCases": [
+        "Pre launch",
+        "Trading review",
+        "Internal strategy",
+        "Client presentation"
+      ],
+      "dataSources": [
+        "Shopify Analytics",
+        "Shopify Reports"
+      ],
+      "level": "advanced"
     },
     {
       "slug": "product-detail-page-ux-diagnosis",
@@ -834,6 +1417,73 @@
       "featured": false,
       "recommended": false,
       "followUp": "slow-moving-sku-strategy-planner"
+    }
+  ],
+  "collections": [
+    {
+      "slug": "post-launch-review",
+      "title": "Post-launch review pack",
+      "description": "Essential prompts for reviewing store performance after a launch, redesign or major update.",
+      "promptSlugs": [
+        "executive-performance-summary",
+        "funnel-and-checkout-performance",
+        "product-and-merchandising-performance",
+        "device-and-channel-efficiency",
+        "homepage-and-entry-page-performance"
+      ]
+    },
+    {
+      "slug": "monthly-reporting",
+      "title": "Monthly reporting pack",
+      "description": "A structured set of prompts for building a monthly performance report.",
+      "promptSlugs": [
+        "executive-performance-summary",
+        "funnel-and-checkout-performance",
+        "product-and-merchandising-performance",
+        "device-and-channel-efficiency",
+        "customer-segment-performance",
+        "acquisition-channel-performance-summary"
+      ]
+    },
+    {
+      "slug": "bfcm-preparation",
+      "title": "BFCM preparation pack",
+      "description": "Plan, run and debrief a Black Friday to Cyber Monday campaign.",
+      "promptSlugs": [
+        "holiday-sales-forecast-and-bfcm-readiness",
+        "ultimate-bfcm-performance-and-readiness",
+        "site-speed-and-traffic-surge-readiness",
+        "bfcm-performance-debrief",
+        "peak-period-vs-baseline-comparison"
+      ]
+    },
+    {
+      "slug": "cro-audit",
+      "title": "CRO audit starter pack",
+      "description": "Core prompts for a conversion rate optimisation audit, from the top of the funnel to checkout.",
+      "promptSlugs": [
+        "executive-performance-summary",
+        "customer-journey-funnel-drop-off-analysis",
+        "search-and-navigation-behaviour",
+        "product-detail-page-ux-diagnosis",
+        "cart-abandonment-deep-dive",
+        "checkout-funnel-drop-off-analysis",
+        "mobile-conversion-gap-analysis",
+        "cro-experiment-backlog-generator"
+      ]
+    },
+    {
+      "slug": "ltv-and-retention",
+      "title": "LTV and retention pack",
+      "description": "Understand and grow customer lifetime value and repeat purchase behaviour.",
+      "promptSlugs": [
+        "customer-lifetime-value-analysis",
+        "repeat-purchase-cadence-and-cohort-patterns",
+        "high-value-customer-identification",
+        "rfm-segmentation-and-action-plan",
+        "lapsed-customer-winback-analysis",
+        "second-purchase-conversion-strategy"
+      ]
     }
   ]
 }
