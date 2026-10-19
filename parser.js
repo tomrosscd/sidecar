@@ -63,6 +63,17 @@ var SELECTORS = {
   // by lifetime order count"). Walked via ancestor search, not a descendant one.
   cardHeader: '[class*="CardHeader"]',
 
+  // ShopifyQL result tables. Sidekick shows a query's result as a report card holding an <s-table>
+  // (header row, body rows of <s-table-cell>), inside the shadow root of <s-shopifyql-metric-card>.
+  // The card title sits in a CardHeaderTitle element outside it, and a "+N more" paragraph says how many
+  // rows the preview left out.
+  shopifyqlTable: 's-table',
+  tableHeader: 's-table-header',
+  tableRow: 's-table-row',
+  tableCell: 's-table-cell',
+  tableBody: 's-table-body',
+  cardHeaderTitle: '[class*="CardHeaderTitle"]',
+
   // Generic card fallback
   baseCard: '[class*="BaseCard"]',
 
@@ -142,12 +153,15 @@ function pierceShadowQueryFirst(root, selector) {
       /* ignore invalid selector on this node type */
     }
   }
+  // The element's own shadow root first (a metric card keeps its value list there), then every child's.
+  if (root.shadowRoot) {
+    const found = pierceShadowQueryFirst(root.shadowRoot, selector);
+    if (found) return found;
+  }
   const children = root.children ? Array.from(root.children) : [];
   for (const child of children) {
-    if (child.shadowRoot) {
-      const found = pierceShadowQueryFirst(child.shadowRoot, selector);
-      if (found) return found;
-    }
+    const found = pierceShadowQueryFirst(child, selector);
+    if (found) return found;
   }
   return null;
 }
@@ -328,6 +342,62 @@ function renderReportLinkCard(linkEl, origin) {
   return lines.join('\n');
 }
 
+// Every element matching `selector` under `root`, following open shadow roots. Order is document order, with a
+// host's shadow tree read before its light children.
+function deepQueryAll(root, selector, out) {
+  const found = out || [];
+  if (!root) return found;
+  if (root.shadowRoot) deepQueryAll(root.shadowRoot, selector, found);
+  const children = root.children ? Array.from(root.children) : [];
+  for (const child of children) {
+    if (child.matches && child.matches(selector)) found.push(child);
+    deepQueryAll(child, selector, found);
+  }
+  return found;
+}
+
+// The <s-table> of a ShopifyQL result card under `el`, or null.
+function findShopifyqlTable(el) {
+  if (!el) return null;
+  if (el.matches && el.matches(SELECTORS.shopifyqlTable)) return el;
+  return deepQueryAll(el, SELECTORS.shopifyqlTable)[0] || null;
+}
+
+// Turns a ShopifyQL result card into Markdown: the title as a heading (the Tables tab labels the sheet from it),
+// the rows as a table, and a note when Sidekick's preview left rows out ("+N more"). Returns '' if the card has
+// no readable table, so the caller can fall back.
+function renderShopifyqlTableCard(container) {
+  const table = findShopifyqlTable(container);
+  if (!table) return '';
+
+  const headers = qsa(table, SELECTORS.tableHeader).map((h) => escapePipes(cleanText(h.textContent)));
+  const rows = qsa(table, SELECTORS.tableRow)
+    .map((row) => qsa(row, SELECTORS.tableCell).map((c) => escapePipes(cleanText(c.textContent))))
+    .filter((cells) => cells.length > 0);
+  if (headers.length === 0 && rows.length === 0) return '';
+
+  const colCount = headers.length || Math.max(...rows.map((r) => r.length));
+  const pad = (cells) => Array.from({ length: colCount }, (_, i) => cells[i] || '');
+  const titleEl = qs(container, SELECTORS.cardHeaderTitle);
+  const title = titleEl ? cleanText(titleEl.textContent) : '';
+
+  const lines = [];
+  if (title) lines.push(`#### ${title}`);
+  lines.push(`| ${pad(headers).join(' | ')} |`);
+  lines.push(`| ${Array(colCount).fill('---').join(' | ')} |`);
+  rows.forEach((cells) => lines.push(`| ${pad(cells).join(' | ')} |`));
+
+  // The first body row of a ShopifyQL result with totals is a "Summary" row, not a data row.
+  const moreMatch = /\+\s*([\d,]+)\s+more\b/.exec(container.textContent || '');
+  const more = moreMatch ? Number(moreMatch[1].replace(/,/g, '')) : 0;
+  if (more > 0) {
+    const shown = rows.filter((cells) => cells[0] !== 'Summary').length;
+    lines.push('');
+    lines.push(`_Showing ${shown} of ${shown + more} rows. Sidekick's preview left out ${more} more, so they are not in this export._`);
+  }
+  return lines.join('\n');
+}
+
 function isCodeCard(el) {
   return el.matches && el.matches(SELECTORS.codeCard) || qs(el, SELECTORS.codeCard) !== null;
 }
@@ -335,6 +405,30 @@ function isCodeCard(el) {
 function renderCodeCard(el) {
   const container = el.matches(SELECTORS.codeCard) ? el : qs(el, SELECTORS.codeCard);
   if (!container) return '';
+  // A ShopifyQL card holds the query and its result table. Keep the query (the pre) and read the table, instead of
+  // flattening the card to its header text.
+  const tableMarkdown = renderShopifyqlTableCard(container);
+  if (tableMarkdown) {
+    const queryEl = qs(container, SELECTORS.codeCardPre);
+    const query = queryEl ? queryEl.textContent.trim() : '';
+    return query ? ['```', query, '```', '', tableMarkdown].join('\n') : tableMarkdown;
+  }
+  // A ShopifyQL metric card (a list of label and value pairs, such as a session funnel) read the same way.
+  const metricEl = qs(container, SELECTORS.metricCard);
+  if (metricEl) {
+    let metricMarkdown = renderMetricCard(metricEl);
+    if (metricMarkdown && !/Inline metric values were not captured/.test(metricMarkdown)) {
+      // The card's title is in its header, outside the metric element. Use it, as a heading so the Tables tab can
+      // label the sheet from it.
+      // The query is already in the card's own code block, a sibling that is rendered separately.
+      metricMarkdown = metricMarkdown.replace(/```shopifyql[\s\S]*?```\n?/, '');
+      const titleEl = qs(container, SELECTORS.cardHeaderTitle);
+      const title = titleEl ? cleanText(titleEl.textContent) : '';
+      if (title) metricMarkdown = metricMarkdown.replace(/^\*\*[^\n]*\*\*/, `#### ${title}`);
+      else metricMarkdown = metricMarkdown.replace(/^\*\*([^\n]*)\*\*/, '#### $1');
+      return metricMarkdown;
+    }
+  }
   const codeEl = qs(container, SELECTORS.codeCardCode) || qs(container, 'code');
   const isContainerPre = container.tagName.toLowerCase() === 'pre';
   const preEl = isContainerPre ? container : qs(container, SELECTORS.codeCardPre);
@@ -440,6 +534,8 @@ function isGenericCard(el) {
 }
 
 function renderGenericCard(el, origin) {
+  const tableMarkdown = renderShopifyqlTableCard(el);
+  if (tableMarkdown) return tableMarkdown;
   const titleEl = qs(el, 'h1, h2, h3, h4, [class*="Title"]');
   const title = titleEl ? cleanText(titleEl.textContent) : '';
   const linkEl = qs(el, 'a[href], s-internal-link[href]');
