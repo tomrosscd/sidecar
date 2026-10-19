@@ -14,7 +14,13 @@ function getCmpText(timeframe, comparison) {
   return m[timeframe] || 'the previous comparable period';
 }
 
-function buildPrompt(promptObj, timeframe, comparison) {
+// Sidekick often shows a query's result as a report card that holds only the first 5 rows ("+N more"), and the
+// export cannot read the rest. Asking for the table in the reply puts every row in the message text.
+const FULL_TABLES_NOTE =
+  'If the answer includes tables, write each one as a complete markdown table in your reply: every row, with no ' +
+  'truncation, no "top N" cut-off and no summary of rows. Do not leave data only in a report card or a download.';
+
+function buildPrompt(promptObj, timeframe, comparison, { fullTables = false } = {}) {
   const tf = 'the ' + timeframe;
   const cmp = getCmpText(timeframe, comparison);
   let t = (promptObj.body || '').replace(/\{\{TF\}\}/g, tf);
@@ -27,5 +33,5 @@ function buildPrompt(promptObj, timeframe, comparison) {
       .replace(/ compared to \{\{CMP\}\}/gi, '')
       .replace(/\{\{CMP\}\}/g, 'the previous comparable period');
   }
-  return t;
+  return fullTables ? `${t.trim()}\n\n${FULL_TABLES_NOTE}` : t;
 }

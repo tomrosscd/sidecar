@@ -20,6 +20,8 @@ const DEFAULT_SETTINGS = {
   customComparison: '',
   includeReasoning: false,
   trimFollowups: true,
+  // Prompts tab: ask Sidekick for full tables in the reply (on by default; see FULL_TABLES_NOTE in prompts.js).
+  fullTables: true,
 };
 
 const PROMPTS_URL = 'https://tomrosscd.github.io/sidecar/prompts.json';
@@ -70,6 +72,7 @@ const contentEl       = document.getElementById('content');
 const customSelEl     = document.getElementById('customSelection');
 const exchangeListEl  = document.getElementById('exchangeList');
 const previewEl       = document.getElementById('preview');
+const fullTablesEl = document.getElementById('fullTables');
 const includeReasoningEl = document.getElementById('includeReasoning');
 const trimFollowupsEl = document.getElementById('trimFollowups');
 const actionStatusEl  = document.getElementById('actionStatus');
@@ -120,6 +123,7 @@ function applySettingsToUI() {
   updateCustomRangeInputs();
   includeReasoningEl.checked = settings.includeReasoning;
   trimFollowupsEl.checked = settings.trimFollowups;
+  fullTablesEl.checked = settings.fullTables;
   document.querySelector(`input[name="topMode"][value="${settings.topMode}"]`).checked = true;
 }
 
@@ -307,6 +311,11 @@ function wirePromptsControls() {
     saveSettings();
     renderPromptsList();
   });
+  fullTablesEl.addEventListener('change', () => {
+    settings.fullTables = fullTablesEl.checked;
+    saveSettings();
+    renderPromptsList();
+  });
   searchInput.addEventListener('input', () => {
     updateCategoryChips();
     renderPromptsList();
@@ -422,7 +431,7 @@ function validateBeforeAction(wrap) {
 }
 
 function renderExpandedPrompt(p) {
-  const template = buildPrompt(p, getEffectiveTf(), getEffectiveCmp());
+  const template = buildPrompt(p, getEffectiveTf(), getEffectiveCmp(), { fullTables: settings.fullTables });
 
   if (!cardState.has(p.slug)) {
     cardState.set(p.slug, { values: new Map() });

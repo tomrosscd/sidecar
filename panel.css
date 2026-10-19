@@ -1026,3 +1026,7 @@ textarea:focus-visible {
   animation: flash-border 1.5s ease-out forwards;
 }
 
+
+.full-tables-option {
+  margin: 8px 0 4px;
+}
