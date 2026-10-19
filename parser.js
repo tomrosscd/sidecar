@@ -363,6 +363,58 @@ function findShopifyqlTable(el) {
   return deepQueryAll(el, SELECTORS.shopifyqlTable)[0] || null;
 }
 
+// Internal marker put in front of a card's table while an article is being read, so that articleToMarkdown can find
+// those tables again. It never reaches the output.
+var CARD_TABLE_MARK = '\u0001card-table\u0001';
+
+// The first Markdown table in `text` as { header, rows } (cells trimmed), or null.
+function parseMarkdownTable(text) {
+  const lines = String(text).split('\n').map((l) => l.trim());
+  const start = lines.findIndex((l) => l.startsWith('|'));
+  if (start < 0) return null;
+  const tableLines = [];
+  for (let i = start; i < lines.length && lines[i].startsWith('|'); i += 1) tableLines.push(lines[i]);
+  const cells = (line) => line.replace(/^\||\|$/g, '').split(/(?<!\\)\|/).map((c) => c.trim());
+  if (tableLines.length < 2) return null;
+  const [header, , ...rows] = tableLines.map(cells);
+  return { header, rows };
+}
+
+const SUMMARY_LABELS = ['summary', 'total'];
+const dataRowLabels = (table) =>
+  table.rows.map((r) => (r[0] || '').toLowerCase()).filter((label) => label && !SUMMARY_LABELS.includes(label));
+
+// True when `text` (a plain Markdown table in the answer) already holds everything in `card`: the same number of
+// columns, every one of the card's row labels, and at least as many rows. The card is then a subset, often a
+// shortened preview, so exporting it too would only add a second, less complete copy.
+function isCoveredBy(card, text) {
+  if (card.header.length !== text.header.length) return false;
+  const cardLabels = dataRowLabels(card);
+  if (cardLabels.length === 0) return false;
+  const textLabels = new Set(dataRowLabels(text));
+  return cardLabels.every((label) => textLabels.has(label)) && textLabels.size >= cardLabels.length;
+}
+
+// Removes each card table that a plain table in the same answer already covers, keeps the rest (and any query
+// block in front of a card), and strips the marker.
+function dropDuplicateCardTables(blocks) {
+  const textTables = blocks
+    .filter((block) => !block.includes(CARD_TABLE_MARK))
+    .map(parseMarkdownTable)
+    .filter(Boolean);
+  return blocks
+    .map((block) => {
+      const at = block.indexOf(CARD_TABLE_MARK);
+      if (at < 0) return block;
+      const head = block.slice(0, at).trimEnd();
+      const cardMarkdown = block.slice(at + CARD_TABLE_MARK.length);
+      const card = parseMarkdownTable(cardMarkdown);
+      if (card && textTables.some((table) => isCoveredBy(card, table))) return head;
+      return head ? `${head}\n\n${cardMarkdown}` : cardMarkdown;
+    })
+    .filter((block) => block && block.trim());
+}
+
 // Turns a ShopifyQL result card into Markdown: the title as a heading (the Tables tab labels the sheet from it),
 // the rows as a table, and a note when Sidekick's preview left rows out ("+N more"). Returns '' if the card has
 // no readable table, so the caller can fall back.
@@ -395,7 +447,7 @@ function renderShopifyqlTableCard(container) {
     lines.push('');
     lines.push(`_Showing ${shown} of ${shown + more} rows. Sidekick's preview left out ${more} more, so they are not in this export._`);
   }
-  return lines.join('\n');
+  return CARD_TABLE_MARK + lines.join('\n');
 }
 
 function isCodeCard(el) {
@@ -426,7 +478,7 @@ function renderCodeCard(el) {
       const title = titleEl ? cleanText(titleEl.textContent) : '';
       if (title) metricMarkdown = metricMarkdown.replace(/^\*\*[^\n]*\*\*/, `#### ${title}`);
       else metricMarkdown = metricMarkdown.replace(/^\*\*([^\n]*)\*\*/, '#### $1');
-      return metricMarkdown;
+      return CARD_TABLE_MARK + metricMarkdown;
     }
   }
   const codeEl = qs(container, SELECTORS.codeCardCode) || qs(container, 'code');
@@ -702,5 +754,5 @@ function articleToMarkdown(articleEl, origin) {
   stripNoise(articleEl);
   const blocks = [];
   collectBlocks(articleEl, origin, blocks);
-  return collapseBlankLines(blocks.join('\n\n'));
+  return collapseBlankLines(dropDuplicateCardTables(blocks).join('\n\n')).split(CARD_TABLE_MARK).join('');
 }

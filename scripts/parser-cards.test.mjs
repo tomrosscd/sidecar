@@ -62,10 +62,28 @@ function card(doc, { title, query, table, list, more }) {
   return root
 }
 
-function markdownFor(options) {
+// A plain table in the answer text, as Sidekick writes it before the card.
+function textTable(doc, rows) {
+  const wrap = doc.createElement('div')
+  wrap.className = '_tableContainer_x'
+  const table = doc.createElement('table')
+  const [head, ...body] = rows
+  const tr = (cells, tag) => {
+    const row = doc.createElement('tr')
+    for (const c of cells) { const cell = doc.createElement(tag); cell.textContent = c; row.append(cell) }
+    return row
+  }
+  const thead = doc.createElement('thead'); thead.append(tr(head, 'th'))
+  const tbody = doc.createElement('tbody'); for (const r of body) tbody.append(tr(r, 'td'))
+  table.append(thead, tbody); wrap.append(table)
+  return wrap
+}
+
+function markdownFor(options, { before = [] } = {}) {
   const dom = setup()
   const article = dom.window.document.createElement('article')
   dom.window.document.body.append(article)
+  for (const rows of before) article.append(textTable(dom.window.document, rows))
   article.append(card(dom.window.document, options))
   return dom.window.articleToMarkdown(article, 'https://admin.shopify.com')
 }
@@ -104,4 +122,43 @@ test('the heading is what the Tables tab uses to name the sheet', () => {
   const md = markdownFor({ title: 'Sales by channel', query: QUERY, table: [['A', 'B'], ['1', '2']] })
   const heading = md.split('\n').find((line) => /^#{1,6}\s+/.test(line))
   assert.equal(heading, '#### Sales by channel')
+})
+
+const CHANNELS = [['Sales channel', 'Orders', 'Net sales'], ['Online Store', '20', '$2,000.00'], ['Recharge', '10', '$1,000.00'], ['Shop', '5', '$500.00'], ['Draft Orders', '2', '$10.00'], ['Total', '37', '$3,510.00']]
+const CHANNEL_CARD = [['Sales channel', 'Orders', 'Net sales'], ['Summary', '37', '$3,510.00'], ['Online Store', '20', '$2,000.00'], ['Recharge', '10', '$1,000.00'], ['Shop', '5', '$500.00']]
+
+test('drops a card table that a plain table in the same answer already covers, and keeps the query', () => {
+  const md = markdownFor({ title: 'Sales by channel', query: QUERY, table: CHANNEL_CARD, more: 1 }, { before: [CHANNELS] })
+  assert.match(md, /\| Draft Orders \| 2 \|/) // the complete text table is there
+  assert.doesNotMatch(md, /#### Sales by channel/)
+  assert.doesNotMatch(md, /Showing/)
+  assert.doesNotMatch(md, /\| Summary \|/)
+  assert.match(md, /```\nFROM sales/) // the query stays
+  assert.equal(md.includes('\u0001'), false)
+})
+
+test('drops a funnel card whose labels are all in a plain table, even with different column names', () => {
+  const funnel = [['Metric', 'Value'], ['Sessions', '1,000'], ['Conversion rate', '2.5%']]
+  const md = markdownFor({ title: 'Session funnel', query: QUERY, list: [['Sessions', '1,000'], ['Conversion rate', '2.4%']] }, { before: [funnel] })
+  assert.doesNotMatch(md, /#### Session funnel/)
+  assert.match(md, /\| Sessions \| 1,000 \|/)
+})
+
+test('keeps a card table when the answer has no plain table for it', () => {
+  const md = markdownFor({ title: 'Sales by channel', query: QUERY, table: CHANNEL_CARD, more: 1 })
+  assert.match(md, /#### Sales by channel/)
+  assert.match(md, /Showing 3 of 4 rows/)
+})
+
+test('keeps a card table that has rows the plain table does not', () => {
+  const partial = [['Sales channel', 'Orders', 'Net sales'], ['Online Store', '20', '$2,000.00']]
+  const md = markdownFor({ title: 'Sales by channel', query: QUERY, table: CHANNEL_CARD }, { before: [partial] })
+  assert.match(md, /#### Sales by channel/)
+  assert.match(md, /\| Recharge \| 10 \|/)
+})
+
+test('keeps a card table whose columns differ from the plain table', () => {
+  const other = [['Sales channel', 'Orders'], ['Online Store', '20'], ['Recharge', '10'], ['Shop', '5']]
+  const md = markdownFor({ title: 'Sales by channel', query: QUERY, table: CHANNEL_CARD }, { before: [other] })
+  assert.match(md, /#### Sales by channel/)
 })
