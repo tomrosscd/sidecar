@@ -14,8 +14,15 @@
   - Paragraphs are now `div._p_…`, not `<p>`, so all answer prose had been dropped. Read again.
   - Numbered section titles are one-item `<ol start="N">` lists; the start number is kept.
   - Tables view: a table with no heading is named after the short title line above it, else `P<n> <prompt>`. Sheet names are trimmed.
+- **Also in this PR (second round):**
+  - **Download everything (.zip)** in both Export views: the conversation `.md`, `<name>-tables.xlsx`, and `csv/NN-<table>.csv` per table (UTF-8 with BOM).
+  - `.xlsx` cells are numbers where they read as one (`1,234`, `12.4%`, `$1,020.50`, `USD 0.00`) with matching formats. Dates, `320 / 0`, `N/A` and leading-zero codes stay text. The header row stays text.
+  - Comparison bar charts: one column per period. The first version read the last number in the group label, so a two-period chart exported the previous period's value under every row.
+  - Truncated card tables ("+N more") and unreadable charts link to the same ShopifyQL in Shopify Analytics (`/analytics/reports/explore?ql=`), which is what Sidekick's "See more" opens. The preview can drop columns as well as rows: the landing page by day card showed Day and Sessions only, and the report has Landing page path too.
+  - Scan progress: the scraper messages the panel with the number of prompts read so far.
+- **Accuracy check:** the "+N more" card rows matched Shopify's own report for the same query (total 320, 27 to 31 Oct all 0). Chart values matched Sidekick's text (United States 308, Australia 12; Desktop 319, Mobile 1 against 0). Zip and nested .xlsx unpack with `unzip` and read back with exceljs.
 - **Verified:** all `scripts/*.test.mjs` pass. On the live 2026 Design Lab store, with the extension's own parser, scraper, table and Insert code run on the page (Claude in Chrome cannot click inside the side panel): a 5-prompt chat with bar charts, a line chart, a funnel card, a full-tables library prompt (Device and Channel Efficiency) and a text-only answer gave 5 exchanges, all prose and 13 tables, in both full-screen and side-panel Sidekick. Insert filled the Sidekick box, not the home-page box, in both layouts. The .xlsx builder output was checked locally (valid zip, unique escaped sheet names).
-- **Not verified:** clicking through the real side panel (Tom to check), and a downloaded .xlsx opened in Excel.
+- **Not verified:** clicking through the real side panel (the new buttons, progress text), and a downloaded .xlsx opened in Excel. Not seen on Design Lab: pie or donut charts, stacked multi-metric charts, image or order cards, very long chats (15+ prompts).
 - **Next step (Tom):** reload the unpacked copy from `~/Documents/SideMark` on this branch and check Export, Tables and Insert; then merge and publish 2.1.2.
 
 ## Previous (20 October 2026, Claude Code, Sonnet 5.5)

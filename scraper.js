@@ -81,6 +81,11 @@
         const previous = byKey.get(key);
         if (!previous || exchange.markdown.length > previous.markdown.length) byKey.set(key, exchange);
       });
+      try {
+        chrome.runtime.sendMessage({ type: 'sidecar-scan-progress', turns: byKey.size }).catch(() => {});
+      } catch (e) {
+        /* no extension context (tests, console) */
+      }
     };
 
     scrollEl.scrollTop = 0;

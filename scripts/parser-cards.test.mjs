@@ -17,7 +17,7 @@ function setup() {
 
 // Builds the same shape Sidekick renders: a code block (the query) and a sibling preview body, whose card header
 // holds the title and whose <s-shopifyql-metric-card> keeps its table or value list in its shadow root.
-function card(doc, { title, query, table, list, more, bars }) {
+function card(doc, { title, query, table, list, more, bars, rawLabels }) {
   const el = (tag, attrs = {}, kids = []) => {
     const node = doc.createElement(tag)
     for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v)
@@ -57,6 +57,7 @@ function card(doc, { title, query, table, list, more, bars }) {
       inner.append(el('div', { 'aria-label': `${label}: 26 Oct – 25 Nov 2026 ${value}` }), el('div', { 'aria-label': `26 Oct – 25 Nov 2026 ${value}` }))
     }
   }
+  if (rawLabels) for (const label of rawLabels) inner.append(el('div', { 'aria-label': label }))
   metric.attachShadow({ mode: 'open' }).append(inner)
   const body = el('div', { class: '_CodeCardBody_x' }, [
     el('div', { class: '_BaseCard_y', 'data-preview-card': 'true' }, [
@@ -191,4 +192,14 @@ test('reads November 2026 paragraphs (div._p_) and keeps numbered section starts
   const md = dom.window.articleToMarkdown(article, 'https://admin.shopify.com')
   assert.match(md, /^Here are both tables\./)
   assert.match(md, /^2\. Performance table$/m)
+})
+
+test('reads a comparison bar chart as one column per period', () => {
+  const md = markdownFor({ title: 'Sessions by device', query: QUERY, rawLabels: [
+    'Desktop: 27 Oct – 25 Nov 2026 1,319,27 Sept – 26 Oct 2026 12', '27 Oct – 25 Nov 2026 1,319', '27 Sept – 26 Oct 2026 12',
+    'Mobile: 27 Oct – 25 Nov 2026 1,27 Sept – 26 Oct 2026 0', '27 Oct – 25 Nov 2026 1', '27 Sept – 26 Oct 2026 0',
+  ] })
+  assert.match(md, /\| Label \| 27 Oct – 25 Nov 2026 \| 27 Sept – 26 Oct 2026 \|/)
+  assert.match(md, /\| Desktop \| 1,319 \| 12 \|/)
+  assert.match(md, /\| Mobile \| 1 \| 0 \|/)
 })

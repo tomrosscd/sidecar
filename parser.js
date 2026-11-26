@@ -455,12 +455,27 @@ function renderShopifyqlTableCard(container) {
     const shown = rows.filter((cells) => cells[0] !== 'Summary').length;
     lines.push('');
     lines.push(`_Showing ${shown} of ${shown + more} rows. Sidekick's preview left out ${more} more, so they are not in this export._`);
+    const metricEl = qs(container, SELECTORS.metricCard);
+    const preEl = qs(container, SELECTORS.codeCardPre);
+    const query = metricEl ? decodeQueryParam(metricEl.getAttribute('query') || '') : preEl ? preEl.textContent : '';
+    const link = shopifyReportLink(query);
+    if (link) lines.push(link);
   }
   return CARD_TABLE_MARK + lines.join('\n');
 }
 
 function isCodeCard(el) {
   return el.matches && el.matches(SELECTORS.codeCard) || qs(el, SELECTORS.codeCard) !== null;
+}
+
+// Link to the same ShopifyQL in Shopify Analytics (what Sidekick's "See more" opens), where every row and column is
+// available. A card preview keeps only a few rows and can drop columns.
+function shopifyReportLink(query) {
+  if (!query || typeof location === 'undefined') return '';
+  const store = /^\/store\/[^/]+/.exec(location.pathname || '');
+  if (!store) return '';
+  const url = `${location.origin}${store[0]}/analytics/reports/explore?ql=${encodeURIComponent(query.trim())}`;
+  return `[Open the full report in Shopify Analytics](${url})`;
 }
 
 function renderCodeCard(el) {
@@ -506,7 +521,9 @@ function renderCodeCard(el) {
     // A chart card with no readable values: its title, then the note. The query is already in its own block.
     const titleEl = qs(container, SELECTORS.cardHeaderTitle);
     const title = titleEl ? cleanText(titleEl.textContent) : '';
-    return title ? `#### ${title}\n\n${chartNote}` : chartNote;
+    const link = shopifyReportLink(decodeQueryParam(metricEl.getAttribute('query') || ''));
+    const note = link ? `${chartNote} ${link}` : chartNote;
+    return title ? `#### ${title}\n\n${note}` : note;
   }
   return ['```' + lang, text, '```'].join('\n');
 }
@@ -593,11 +610,13 @@ function renderMetricCard(el) {
       lines.push(...rows);
     }
   } else {
-    const chartRows = readChartBarRows(el);
-    if (chartRows.length > 0) {
-      lines.push('| Label | Value |');
-      lines.push('| --- | --- |');
-      chartRows.forEach(([label, value]) => lines.push(`| ${escapePipes(label)} | ${escapePipes(value)} |`));
+    const chart = readChartBars(el);
+    if (chart) {
+      // One series: "Value". Several (a comparison): each series is named after its period.
+      const heads = chart.series.length === 1 ? ['Value'] : chart.series;
+      lines.push(`| Label | ${heads.map(escapePipes).join(' | ')} |`);
+      lines.push(`| ${Array(heads.length + 1).fill('---').join(' | ')} |`);
+      chart.rows.forEach((cells) => lines.push(`| ${cells.map(escapePipes).join(' | ')} |`));
     } else if (query) {
       lines.push("_Sidekick drew this result as a chart and its values are not in the page. Turn on \"Return full tables in the reply\" in the Prompts tab, or ask Sidekick for the table._");
     }
@@ -619,21 +638,42 @@ function collectAriaLabels(root, out) {
   return out;
 }
 
-// Since Nov 2026 Sidekick often draws a ShopifyQL result as a bar chart instead of a table. Each bar carries an
-// aria-label such as "United States: 26 Oct – 25 Nov 2026 308" (label, period, value), which is the only place the
-// rows exist in the DOM. Returns [label, value] pairs in chart order, one per label.
-function readChartBarRows(el) {
-  const seen = new Set();
+// Since Nov 2026 Sidekick often draws a ShopifyQL result as a bar chart instead of a table. The rows only exist as
+// aria-labels: a group label ("Desktop: 27 Oct – 25 Nov 2026 319,27 Sept – 26 Oct 2026 0") followed by one label per
+// series bar ("27 Oct – 25 Nov 2026 319"). Returns { series, rows } with one value column per series (a comparison
+// chart has two), or null when the card has no such labels (a line chart).
+function readChartBars(el) {
+  const series = [];
   const rows = [];
-  collectAriaLabels(el, []).forEach((text) => {
-    const match = /^(.+?):\s+.*?\s(\S+)$/.exec(cleanText(text));
-    if (!match || !/\d/.test(match[2])) return;
-    const label = match[1].trim();
-    if (seen.has(label)) return;
-    seen.add(label);
-    rows.push([label, match[2]]);
+  const seen = new Set();
+  let current = null;
+  collectAriaLabels(el, []).forEach((raw) => {
+    const text = cleanText(raw);
+    const group = /^(.+?):\s+\S/.exec(text);
+    if (group) {
+      const label = group[1].trim();
+      current = seen.has(label) ? null : { label, values: {} };
+      if (current) {
+        seen.add(label);
+        rows.push(current);
+      }
+      return;
+    }
+    const bar = /^(.*\S)\s+(-?[$]?[\d.,]+%?)$/.exec(text);
+    if (!current || !bar) return;
+    const name = bar[1];
+    if (!series.includes(name)) series.push(name);
+    if (!(name in current.values)) current.values[name] = bar[2];
   });
-  return rows;
+  const usable = rows.filter((r) => Object.keys(r.values).length > 0);
+  if (usable.length === 0 || series.length === 0) return null;
+  return { series, rows: usable.map((r) => [r.label, ...series.map((name) => r.values[name] || '')]) };
+}
+
+// [label, value] pairs for a single-series chart (kept for callers and tests that want the simple shape).
+function readChartBarRows(el) {
+  const chart = readChartBars(el);
+  return chart ? chart.rows.map((r) => [r[0], r[1]]) : [];
 }
 
 function isGenericCard(el) {
