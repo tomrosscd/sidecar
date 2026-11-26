@@ -2,7 +2,7 @@
 
 ## Resume here (updated 26 November 2026, Claude Code, Opus 5.5)
 
-- **Branch:** `fix/2.1.2-sidekick-markup`. Extension version **2.1.2**. Not published to the Chrome Web Store.
+- **Branch:** `main`. Extension version **2.2.0** (released as 2.2.0 instead of 2.1.2 because it adds features). Package: `zip -r sidecar-2.2.0.zip manifest.json background.js panel.html panel.css panel.js parser.js scraper.js prompts.js prompts-source.js prompts.json icons fonts assets vendor theme.js -x '*/README.md' '*.DS_Store'`.
 - **Why:** the store copy of 2.1.1 predates the 19 to 20 October work on `main` (same version number), and Sidekick changed its markup in November.
 - **Fixes:**
   - Prompt count: Sidekick dropped `data-message-role="user"`. User turns are now `[class*="UserMessage"][data-message-render-id]`, with text in a `variantUser` bubble. Both old and new selectors are kept.
@@ -23,7 +23,7 @@
 - **Accuracy check:** the "+N more" card rows matched Shopify's own report for the same query (total 320, 27 to 31 Oct all 0). Chart values matched Sidekick's text (United States 308, Australia 12; Desktop 319, Mobile 1 against 0). Zip and nested .xlsx unpack with `unzip` and read back with exceljs.
 - **Verified:** all `scripts/*.test.mjs` pass. On the live 2026 Design Lab store, with the extension's own parser, scraper, table and Insert code run on the page (Claude in Chrome cannot click inside the side panel): a 5-prompt chat with bar charts, a line chart, a funnel card, a full-tables library prompt (Device and Channel Efficiency) and a text-only answer gave 5 exchanges, all prose and 13 tables, in both full-screen and side-panel Sidekick. Insert filled the Sidekick box, not the home-page box, in both layouts. The .xlsx builder output was checked locally (valid zip, unique escaped sheet names).
 - **Not verified:** clicking through the real side panel (the new buttons, progress text), and a downloaded .xlsx opened in Excel. Not seen on Design Lab: pie or donut charts, stacked multi-metric charts, image or order cards, very long chats (15+ prompts).
-- **Next step (Tom):** reload the unpacked copy from `~/Documents/SideMark` on this branch and check Export, Tables and Insert; then merge and publish 2.1.2.
+- **Next step (Tom):** reload the unpacked copy from `~/Documents/SideMark` on this branch and check Export, Tables and Insert; then merge and publish 2.2.0.
 
 ## Previous (20 October 2026, Claude Code, Sonnet 5.5)
 
@@ -35,6 +35,6 @@
   - Diagnostic scripts for when Shopify changes the markup: `scripts/dump-cards.js`, `scripts/probe-card-api.js`, `scripts/probe-card-query.js` (paste into the DevTools console on a Sidekick page).
 - **Known limits:** a card only holds its first 5 rows, so rows beyond that are not in an export made from a card; asking for the table in the reply is the fix. A text-only answer may omit the ShopifyQL. Excel sheet names are cut at 31 characters.
 - **Merge note:** the Product UI restyle replaced the earlier forest-green tweaks in `panel.css` (the top green border on the panel body stays removed).
-- **Next step (Tom):** package and publish 2.1.1 if wanted (command in the earlier entry: zip the files the manifest needs). The 2.2.0 clean-up (drop the GitHub Pages address and its host permission) waits on Sidecar Web's move.
+- **Next step (Tom):** package and publish 2.1.1 if wanted (command in the earlier entry: zip the files the manifest needs). The 2.3.0 clean-up (was 2.2.0; drop the GitHub Pages address and its host permission) waits on Sidecar Web's move.
 - **Verified:** validate-prompts, extension, build-site, prompts and parser-cards tests; `node scripts/build-site.mjs`; in Chromium, the five source checks (`scripts/e2e-extension.mjs`) and the full-tables switch. The card parser was checked against saved copies of real card structure, and a re-export from the live page was confirmed by Tom for the table and funnel cards.
 - **Not verified:** the dedupe on the live page, and a store-installed copy.
