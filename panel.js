@@ -564,10 +564,12 @@ function navigateToFollowUp(slug) {
 const SHOPIFY_TAB_PATTERN = /^https:\/\/(admin\.shopify\.com|[^/]+\.myshopify\.com)\//;
 
 function insertIntoSidekick(text) {
+  // The admin home page has its own sidekickMessage box, so the one inside the Sidekick panel comes first.
   const SELECTORS = [
+    '#sidekick textarea[name="sidekickMessage"]',
+    '#sidekick textarea',
     'textarea[name="sidekickMessage"]',
     'textarea[enterkeyhint="send"]',
-    '#sidekick textarea',
   ];
 
   function findIn(root) {
@@ -700,6 +702,7 @@ function wireExportControls() {
   });
 
   rescanBtn.addEventListener('click', () => runScrape(includeReasoningEl.checked));
+  document.getElementById('tablesRescanBtn').addEventListener('click', () => runScrape(includeReasoningEl.checked));
   errorRescanBtn.addEventListener('click', () => runScrape(includeReasoningEl.checked));
   copyBtn.addEventListener('click', onCopy);
   downloadBtn.addEventListener('click', onDownload);

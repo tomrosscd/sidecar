@@ -1,6 +1,20 @@
 # Handoff
 
-## Resume here (updated 20 October 2026, Claude Code, Sonnet 5.5)
+## Resume here (updated 26 November 2026, Claude Code, Opus 5.5)
+
+- **Branch:** `fix/2.1.2-sidekick-markup`. Extension version **2.1.2**. Not published to the Chrome Web Store.
+- **Why:** the store copy of 2.1.1 predates the 19 to 20 October work on `main` (same version number), and Sidekick changed its markup in November.
+- **Fixes:**
+  - Prompt count: Sidekick dropped `data-message-role="user"`. User turns are now `[class*="UserMessage"][data-message-render-id]`, with text in a `variantUser` bubble. Both old and new selectors are kept.
+  - Insert: the admin home page has its own `textarea[name="sidekickMessage"]`, which Insert filled instead of the chat. The one inside `#sidekick` now comes first.
+  - Chart cards: Sidekick now often draws ShopifyQL results as bar charts. Rows are read from each bar's `aria-label` (`label: period value`). Line charts carry no values in the DOM, so the export notes that and points to the full-tables option.
+  - Metric cards use a `####` heading so the Tables view names the sheet after the card.
+  - Rescan button in the Tables view.
+- **Verified:** all `scripts/*.test.mjs` pass (2 new chart tests). On the live 2026 Design Lab store: two prompts split into two exchanges with the new selector, bar chart rows read for 4 of 5 cards (the by-day line chart has none), and Insert fills the Sidekick chat box (not sent).
+- **Not verified:** the full panel loaded as an extension end to end (scraper run through the panel, Tables view, .xlsx download).
+- **Next step (Tom):** reload the unpacked copy from `~/Documents/SideMark` on this branch and check Export, Tables and Insert; then merge and publish 2.1.2.
+
+## Previous (20 October 2026, Claude Code, Sonnet 5.5)
 
 - **Branch and last commit:** `main`, `4246e6b`. Extension version in `manifest.json` is **2.1.1**. Not published to the Chrome Web Store by this change.
 - **State:** `main` now holds the 2.1.x line (feed read from Cloudflare first, then GitHub Pages, then cached and bundled prompts; Product UI look) together with the local work that had not been pushed: Download All (.xlsx), the Insert fix for the new Sidekick HTML, custom date range inputs in the Prompts tab, and the changes below. The feed deploy from this push succeeded and the live feed is unchanged (`updated` 2026-10-05, 74 prompts).

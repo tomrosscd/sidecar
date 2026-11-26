@@ -83,7 +83,9 @@
   // sibling/depth relationship between the two — only that they appear in
   // the log in document order, which the live Sidekick DOM guarantees.
   function extractExchanges(logEl, pageOrigin, includeReasoning) {
-    const userSelector = '[data-message-role="user"]';
+    // Sidekick dropped data-message-role in Nov 2026; user turns are now
+    // [class*="UserMessage"][data-message-render-id]. Keep the old one too.
+    const userSelector = SELECTORS.userMessageRole;
     const articleSelector = '[data-item-type="content"] article';
     const groupSelector = '[data-item-type="group"]';
 

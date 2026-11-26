@@ -17,7 +17,7 @@ function setup() {
 
 // Builds the same shape Sidekick renders: a code block (the query) and a sibling preview body, whose card header
 // holds the title and whose <s-shopifyql-metric-card> keeps its table or value list in its shadow root.
-function card(doc, { title, query, table, list, more }) {
+function card(doc, { title, query, table, list, more, bars }) {
   const el = (tag, attrs = {}, kids = []) => {
     const node = doc.createElement(tag)
     for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v)
@@ -50,6 +50,12 @@ function card(doc, { title, query, table, list, more }) {
         ]),
       )),
     )
+  }
+  if (bars) {
+    // A bar chart: the rows only exist as each bar's aria-label ("label: period value").
+    for (const [label, value] of bars) {
+      inner.append(el('div', { 'aria-label': `${label}: 26 Oct – 25 Nov 2026 ${value}` }), el('div', { 'aria-label': `26 Oct – 25 Nov 2026 ${value}` }))
+    }
   }
   metric.attachShadow({ mode: 'open' }).append(inner)
   const body = el('div', { class: '_CodeCardBody_x' }, [
@@ -161,4 +167,17 @@ test('keeps a card table whose columns differ from the plain table', () => {
   const other = [['Sales channel', 'Orders'], ['Online Store', '20'], ['Recharge', '10'], ['Shop', '5']]
   const md = markdownFor({ title: 'Sales by channel', query: QUERY, table: CHANNEL_CARD }, { before: [other] })
   assert.match(md, /#### Sales by channel/)
+})
+
+test('reads a bar chart card from its bar labels', () => {
+  const md = markdownFor({ title: 'Sessions by country', query: QUERY, bars: [['United States', '308'], ['Australia', '12']] })
+  assert.match(md, /#### Sessions by country/)
+  assert.match(md, /\| United States \| 308 \|/)
+  assert.match(md, /\| Australia \| 12 \|/)
+  assert.equal((md.match(/United States/g) || []).length, 1)
+})
+
+test('notes a chart card whose values are not in the page', () => {
+  const md = markdownFor({ title: 'Sessions by day', query: QUERY, bars: [] })
+  assert.match(md, /values are not in the page/)
 })

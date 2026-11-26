@@ -29,8 +29,8 @@ var SELECTORS = {
   headerHeadingFallback: 'h1, h2, h3',
 
   // Exchange grouping
-  userMessageRole: '[data-message-role="user"]',
-  userMessageContent: '[class*="UserMessageContentMessage"]',
+  userMessageRole: '[data-message-role="user"], [class*="UserMessage"][data-message-render-id]',
+  userMessageContent: '[class*="UserMessageContentMessage"], [class*="variantUser"]',
   itemTypeAttr: 'data-item-type', // "content" | "group"
   messageFooter: '[class*="MessageFooter"]',
 
@@ -467,17 +467,19 @@ function renderCodeCard(el) {
   }
   // A ShopifyQL metric card (a list of label and value pairs, such as a session funnel) read the same way.
   const metricEl = qs(container, SELECTORS.metricCard);
+  let chartNote = '';
   if (metricEl) {
     let metricMarkdown = renderMetricCard(metricEl);
-    if (metricMarkdown && !/Inline metric values were not captured/.test(metricMarkdown)) {
+    const noteMatch = /\n(_Sidekick drew this result as a chart[^\n]*)$/.exec(metricMarkdown || '');
+    if (noteMatch) chartNote = noteMatch[1];
+    if (metricMarkdown && !/values are not in the page/.test(metricMarkdown)) {
       // The card's title is in its header, outside the metric element. Use it, as a heading so the Tables tab can
       // label the sheet from it.
       // The query is already in the card's own code block, a sibling that is rendered separately.
       metricMarkdown = metricMarkdown.replace(/```shopifyql[\s\S]*?```\n?/, '');
       const titleEl = qs(container, SELECTORS.cardHeaderTitle);
       const title = titleEl ? cleanText(titleEl.textContent) : '';
-      if (title) metricMarkdown = metricMarkdown.replace(/^\*\*[^\n]*\*\*/, `#### ${title}`);
-      else metricMarkdown = metricMarkdown.replace(/^\*\*([^\n]*)\*\*/, '#### $1');
+      if (title) metricMarkdown = metricMarkdown.replace(/^#### [^\n]*/, `#### ${title}`);
       return CARD_TABLE_MARK + metricMarkdown;
     }
   }
@@ -491,7 +493,8 @@ function renderCodeCard(el) {
     const cls = Array.from(codeEl.classList).find((c) => c.startsWith('language-'));
     if (cls) lang = cls.replace('language-', '');
   }
-  return ['```' + lang, text, '```'].join('\n');
+  const block = ['```' + lang, text, '```'].join('\n');
+  return chartNote ? `${block}\n\n${chartNote}` : block;
 }
 
 function isMetricCard(el) {
@@ -546,7 +549,8 @@ function renderMetricCard(el) {
   const title = getMetricCardTitle(el);
   const query = el.getAttribute('query') || '';
 
-  const lines = [`**${title}**`];
+  // A #### heading so the Tables view names the sheet after the card.
+  const lines = [`#### ${title}`];
   if (query) {
     lines.push('```shopifyql');
     lines.push(softWrapShopifyQL(decodeQueryParam(query)));
@@ -574,11 +578,48 @@ function renderMetricCard(el) {
       lines.push('| --- | --- |');
       lines.push(...rows);
     }
-  } else if (query) {
-    lines.push('_Inline metric values were not captured._');
+  } else {
+    const chartRows = readChartBarRows(el);
+    if (chartRows.length > 0) {
+      lines.push('| Label | Value |');
+      lines.push('| --- | --- |');
+      chartRows.forEach(([label, value]) => lines.push(`| ${escapePipes(label)} | ${escapePipes(value)} |`));
+    } else if (query) {
+      lines.push("_Sidekick drew this result as a chart and its values are not in the page. Turn on \"Return full tables in the reply\" in the Prompts tab, or ask Sidekick for the table._");
+    }
   }
 
   return lines.join('\n');
+}
+
+// Collects every aria-label in an element's tree, shadow roots included.
+function collectAriaLabels(root, out) {
+  if (!root) return out;
+  const scope = root.shadowRoot || root;
+  const nodes = scope.querySelectorAll ? scope.querySelectorAll('*') : [];
+  nodes.forEach((node) => {
+    const label = node.getAttribute && node.getAttribute('aria-label');
+    if (label) out.push(label);
+    if (node.shadowRoot) collectAriaLabels(node, out);
+  });
+  return out;
+}
+
+// Since Nov 2026 Sidekick often draws a ShopifyQL result as a bar chart instead of a table. Each bar carries an
+// aria-label such as "United States: 26 Oct – 25 Nov 2026 308" (label, period, value), which is the only place the
+// rows exist in the DOM. Returns [label, value] pairs in chart order, one per label.
+function readChartBarRows(el) {
+  const seen = new Set();
+  const rows = [];
+  collectAriaLabels(el, []).forEach((text) => {
+    const match = /^(.+?):\s+.*?\s(\S+)$/.exec(cleanText(text));
+    if (!match || !/\d/.test(match[2])) return;
+    const label = match[1].trim();
+    if (seen.has(label)) return;
+    seen.add(label);
+    rows.push([label, match[2]]);
+  });
+  return rows;
 }
 
 function isGenericCard(el) {
