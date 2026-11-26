@@ -17,7 +17,7 @@ function setup() {
 
 // Builds the same shape Sidekick renders: a code block (the query) and a sibling preview body, whose card header
 // holds the title and whose <s-shopifyql-metric-card> keeps its table or value list in its shadow root.
-function card(doc, { title, query, table, list, more }) {
+function card(doc, { title, query, table, list, more, bars, rawLabels }) {
   const el = (tag, attrs = {}, kids = []) => {
     const node = doc.createElement(tag)
     for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v)
@@ -51,6 +51,13 @@ function card(doc, { title, query, table, list, more }) {
       )),
     )
   }
+  if (bars) {
+    // A bar chart: the rows only exist as each bar's aria-label ("label: period value").
+    for (const [label, value] of bars) {
+      inner.append(el('div', { 'aria-label': `${label}: 26 Oct – 25 Nov 2026 ${value}` }), el('div', { 'aria-label': `26 Oct – 25 Nov 2026 ${value}` }))
+    }
+  }
+  if (rawLabels) for (const label of rawLabels) inner.append(el('div', { 'aria-label': label }))
   metric.attachShadow({ mode: 'open' }).append(inner)
   const body = el('div', { class: '_CodeCardBody_x' }, [
     el('div', { class: '_BaseCard_y', 'data-preview-card': 'true' }, [
@@ -161,4 +168,38 @@ test('keeps a card table whose columns differ from the plain table', () => {
   const other = [['Sales channel', 'Orders'], ['Online Store', '20'], ['Recharge', '10'], ['Shop', '5']]
   const md = markdownFor({ title: 'Sales by channel', query: QUERY, table: CHANNEL_CARD }, { before: [other] })
   assert.match(md, /#### Sales by channel/)
+})
+
+test('reads a bar chart card from its bar labels', () => {
+  const md = markdownFor({ title: 'Sessions by country', query: QUERY, bars: [['United States', '308'], ['Australia', '12']] })
+  assert.match(md, /#### Sessions by country/)
+  assert.match(md, /\| United States \| 308 \|/)
+  assert.match(md, /\| Australia \| 12 \|/)
+  assert.equal((md.match(/United States/g) || []).length, 1)
+})
+
+test('notes a chart card whose values are not in the page', () => {
+  const md = markdownFor({ title: 'Sessions by day', query: QUERY, bars: [] })
+  assert.match(md, /values are not in the page/)
+})
+
+test('reads November 2026 paragraphs (div._p_) and keeps numbered section starts', () => {
+  const dom = setup()
+  const doc = dom.window.document
+  const article = doc.createElement('article')
+  article.innerHTML = '<div class="_p_m8r6h_159">Here are both tables.</div><ol start="2"><li>Performance table</li></ol>'
+  doc.body.append(article)
+  const md = dom.window.articleToMarkdown(article, 'https://admin.shopify.com')
+  assert.match(md, /^Here are both tables\./)
+  assert.match(md, /^2\. Performance table$/m)
+})
+
+test('reads a comparison bar chart as one column per period', () => {
+  const md = markdownFor({ title: 'Sessions by device', query: QUERY, rawLabels: [
+    'Desktop: 27 Oct – 25 Nov 2026 1,319,27 Sept – 26 Oct 2026 12', '27 Oct – 25 Nov 2026 1,319', '27 Sept – 26 Oct 2026 12',
+    'Mobile: 27 Oct – 25 Nov 2026 1,27 Sept – 26 Oct 2026 0', '27 Oct – 25 Nov 2026 1', '27 Sept – 26 Oct 2026 0',
+  ] })
+  assert.match(md, /\| Label \| 27 Oct – 25 Nov 2026 \| 27 Sept – 26 Oct 2026 \|/)
+  assert.match(md, /\| Desktop \| 1,319 \| 12 \|/)
+  assert.match(md, /\| Mobile \| 1 \| 0 \|/)
 })

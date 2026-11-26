@@ -1026,3 +1026,9 @@ textarea:focus-visible {
 [data-cui-theme="dark"] .search-input::-webkit-search-cancel-button {
   filter: grayscale(1) invert(1) brightness(0.8);
 }
+
+/* Download everything: .md + .xlsx + one .csv per table, in one .zip */
+.btn-download-everything {
+  width: 100%;
+  margin-top: var(--cui-space-8);
+}

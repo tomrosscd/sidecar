@@ -564,10 +564,12 @@ function navigateToFollowUp(slug) {
 const SHOPIFY_TAB_PATTERN = /^https:\/\/(admin\.shopify\.com|[^/]+\.myshopify\.com)\//;
 
 function insertIntoSidekick(text) {
+  // The admin home page has its own sidekickMessage box, so the one inside the Sidekick panel comes first.
   const SELECTORS = [
+    '#sidekick textarea[name="sidekickMessage"]',
+    '#sidekick textarea',
     'textarea[name="sidekickMessage"]',
     'textarea[enterkeyhint="send"]',
-    '#sidekick textarea',
   ];
 
   function findIn(root) {
@@ -700,6 +702,8 @@ function wireExportControls() {
   });
 
   rescanBtn.addEventListener('click', () => runScrape(includeReasoningEl.checked));
+  document.getElementById('tablesRescanBtn').addEventListener('click', () => runScrape(includeReasoningEl.checked));
+  document.querySelectorAll('.js-download-everything').forEach((btn) => btn.addEventListener('click', onDownloadEverything));
   errorRescanBtn.addEventListener('click', () => runScrape(includeReasoningEl.checked));
   copyBtn.addEventListener('click', onCopy);
   downloadBtn.addEventListener('click', onDownload);
@@ -760,7 +764,14 @@ async function runScrape(includeReasoning) {
   }
 }
 
+// The scraper reports each turn it reads while it scrolls a long chat (see scraper.js).
+chrome.runtime.onMessage.addListener((message) => {
+  if (!message || message.type !== 'sidecar-scan-progress' || scanningEl.hidden) return;
+  scanningEl.textContent = `Reading the conversation… ${message.turns} prompt${message.turns === 1 ? '' : 's'} so far`;
+});
+
 function showScanning() {
+  scanningEl.textContent = 'Scanning the page for Sidekick…';
   scanningEl.hidden = false;
   errorStateEl.hidden = true;
   contentEl.hidden = true;
@@ -1034,15 +1045,31 @@ function extractTablesFromExchange(exchange) {
   const lines = body.split('\n');
   const tables = [];
   let currentHeading = null;
+  // A short title line (often a numbered section such as "2. Performance table") also names the tables below it,
+  // like a heading, so sheets are not all called "Prompt N".
+  let inFence = false;
   let i = 0;
 
   while (i < lines.length) {
     const line = lines[i];
+    if (line.trim().startsWith('```')) {
+      inFence = !inFence;
+      i++;
+      continue;
+    }
+    if (inFence) {
+      i++;
+      continue;
+    }
     const headingMatch = line.match(/^#{1,6}\s+(.*)/);
     if (headingMatch) {
       currentHeading = headingMatch[1].trim();
       i++;
       continue;
+    }
+    const plain = stripMarkdownEmphasis(line.replace(/^\s*(\d+\.|-)\s+/, '')).trim();
+    if (plain && !isTableRowLine(line) && plain.length <= 60 && !/[.:]$/.test(plain)) {
+      currentHeading = plain;
     }
 
     if (isTableRowLine(line) && lines[i + 1] && isTableSeparatorLine(lines[i + 1])) {
@@ -1053,7 +1080,7 @@ function extractTablesFromExchange(exchange) {
         j++;
       }
       tables.push({
-        label: currentHeading || `Prompt ${exchange.index}`,
+        label: currentHeading || `P${exchange.index} ${(exchange.userPrompt || '').replace(/\s+/g, ' ').trim()}`.trim(),
         lines: tableLines,
       });
       i = j;
@@ -1244,7 +1271,25 @@ function xmlEsc(s) {
 }
 
 function safeSheetName(name) {
-  return name.replace(/[\[\]:*?/\\]/g, '_').slice(0, 31);
+  return name.replace(/[\[\]:*?/\\]/g, '_').slice(0, 31).trim() || 'Sheet';
+}
+
+// Reads a cell such as "1,234", "-3.5", "12.4%" or "$1,020.50" as a number, so Excel can sum it. Anything else (dates,
+// "320 / 0", "N/A", codes with a leading zero) stays text. Returns { value, style } with a cellXfs index, or null.
+function parseSheetNumber(raw) {
+  // Currency codes Sidekick writes around amounts ("USD 1,020.50", "1,020.50 AUD") are dropped.
+  const text = String(raw).trim().replace(/\u2212/g, '-').replace(/^[A-Z]{3}\s+|\s+[A-Z]{3}$/g, '');
+  const m = /^(-)?(\$)?(-)?(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(%)?$/.exec(text);
+  if (!m) return null;
+  const [, neg1, dollar, neg2, whole, frac = '', pct] = m;
+  if (dollar && pct) return null;
+  if (/^0\d/.test(whole) && !frac) return null;
+  let value = Number(`${neg1 || neg2 ? '-' : ''}${whole.replace(/,/g, '')}${frac}`);
+  if (!Number.isFinite(value)) return null;
+  if (pct) return { value: value / 100, style: 3 };
+  if (dollar) return { value, style: 4 };
+  if (frac) return { value, style: 2 };
+  return { value, style: whole.includes(',') ? 1 : 0 };
 }
 
 function tableLinesToSheetXml(lines) {
@@ -1259,9 +1304,12 @@ function tableLinesToSheetXml(lines) {
   }
 
   const sheetData = rows.map((cells, ri) =>
-    `<row r="${ri + 1}">${cells.map((val, ci) =>
-      `<c r="${colRef(ci)}${ri + 1}" t="inlineStr"><is><t>${xmlEsc(val)}</t></is></c>`
-    ).join('')}</row>`
+    `<row r="${ri + 1}">${cells.map((val, ci) => {
+      const ref = `${colRef(ci)}${ri + 1}`;
+      const num = ri > 0 ? parseSheetNumber(val) : null; // the header row stays text
+      if (num) return `<c r="${ref}" s="${num.style}"><v>${num.value}</v></c>`;
+      return `<c r="${ref}" t="inlineStr"><is><t>${xmlEsc(val)}</t></is></c>`;
+    }).join('')}</row>`
   ).join('');
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
@@ -1313,16 +1361,30 @@ function buildXlsxBlob(tables) {
     ['xl/styles.xml',
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
       + `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
+      + `<numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;$&quot;#,##0.00"/></numFmts>`
       + `<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>`
       + `<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>`
       + `<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>`
       + `<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>`
-      + `<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>`
+      + `<cellXfs count="5">`
+      + `<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>`
+      + `<xf numFmtId="3" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>`
+      + `<xf numFmtId="4" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>`
+      + `<xf numFmtId="10" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>`
+      + `<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>`
+      + `</cellXfs>`
       + `</styleSheet>`],
     ...tables.map((t, i) => [`xl/worksheets/sheet${i+1}.xml`, tableLinesToSheetXml(t.lines)]),
   ];
 
-  const dataArrays = files.map(([, content]) => u8enc(content));
+  return new Blob([buildZipBytes(files)], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+}
+
+// Stored (uncompressed) zip of [name, string | Uint8Array] pairs. Used for the .xlsx and the Download everything zip.
+function buildZipBytes(files) {
+  const dataArrays = files.map(([, content]) => (typeof content === 'string' ? u8enc(content) : content));
   const locals = [];
   let offset = 0;
   const centrals = [];
@@ -1335,9 +1397,43 @@ function buildXlsxBlob(tables) {
   }
 
   const cd = concatU8(...centrals);
-  return new Blob([concatU8(...locals, cd, zipEnd(files.length, cd.length, offset))], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
+  return concatU8(...locals, cd, zipEnd(files.length, cd.length, offset));
+}
+
+// One .zip with the conversation Markdown, every table in one .xlsx, and each table as its own .csv.
+function onDownloadEverything() {
+  if (!scrapeResult) {
+    showActionStatus('Scan a Sidekick conversation first.', true);
+    return;
+  }
+  const date = formatExportedDateForFilename();
+  const base = `sidekick-${slugify(scrapeResult.title)}-${date}`;
+  const tables = getAllTables();
+  const files = [[`${base}.md`, previewEl.value || buildMarkdown()]];
+  if (tables.length) {
+    files.push([`${base}-tables.xlsx`, null]);
+    tables.forEach((t, i) => {
+      const n = String(i + 1).padStart(2, '0');
+      files.push([`csv/${n}-${slugify(t.label || 'table').slice(0, 60)}.csv`, '\ufeff' + tableToCsv(t.lines)]);
+    });
+  }
+  const pending = files.findIndex(([, c]) => c === null);
+  const finish = (xlsxBytes) => {
+    if (pending >= 0) files[pending][1] = xlsxBytes;
+    const blob = new Blob([buildZipBytes(files)], { type: 'application/zip' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${base}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    const what = tables.length ? `Markdown and ${tables.length} table${tables.length === 1 ? '' : 's'}` : 'Markdown (no tables found)';
+    showActionStatus(`Downloaded ${base}.zip: ${what}`, false);
+  };
+  if (pending >= 0) buildXlsxBlob(tables).arrayBuffer().then((b) => finish(new Uint8Array(b)));
+  else finish();
 }
 
 function onDownloadXlsx() {

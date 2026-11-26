@@ -132,6 +132,7 @@
         <!-- Download all tables as .xlsx — only shown in Tables sub-view -->
         <div class="download-xlsx-row" hidden>
           <button type="button" class="btn-download-xlsx" id="downloadXlsxBtn">Download All (.xlsx)</button>
+          <button type="button" class="btn-outline btn-download-everything js-download-everything">Download everything (.zip)</button>
         </div>
 
         <!-- Scrollable body -->
@@ -175,11 +176,22 @@
               <button type="button" class="btn-primary" id="copyBtn">Copy Markdown</button>
               <button type="button" class="btn-outline" id="downloadBtn">Download .md</button>
             </div>
+            <button type="button" class="btn-outline btn-download-everything js-download-everything">Download everything (.zip)</button>
             <p id="actionStatus" class="action-status" aria-live="polite"></p>
           </div>
 
           <!-- Tables sub-view -->
           <div id="tablesView" hidden>
+            <div class="count-rescan-row">
+              <p class="count-readout"></p>
+              <button type="button" class="btn-rescan-inline" id="tablesRescanBtn" title="Rescan page">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 2v6h-6"/>
+                  <path d="M21 13a9 9 0 1 1-3-7.7L21 8"/>
+                </svg>
+                Rescan
+              </button>
+            </div>
             <div id="tablesList" class="tables-list"></div>
           </div>
 

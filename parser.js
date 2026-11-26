@@ -24,15 +24,22 @@ var SELECTORS = {
   // Root / scope
   root: ['#sidekick', '[aria-label="Sidekick"]', '[id*="sidekick"]'],
   log: ['[role="log"]', '#sidekick-chat-body'],
+  // Since Nov 2026 the chat is virtualised: only turns near the viewport are mounted, one per row.
+  scroller: ['[role="list"].Polaris-Scroll', '[role="log"]', '#sidekick-chat-body'],
+  virtualRow: '[data-sk-virtualized-row]',
+  userRenderId: 'data-message-render-id',
   conversationTitleButton: 'button[class*="ConversationTitleButton"]',
   conversationTitleHeading: '.s-internal-heading',
   headerHeadingFallback: 'h1, h2, h3',
 
   // Exchange grouping
-  userMessageRole: '[data-message-role="user"]',
-  userMessageContent: '[class*="UserMessageContentMessage"]',
+  userMessageRole: '[data-message-role="user"], [class*="UserMessage"][data-message-render-id]',
+  userMessageContent: '[class*="UserMessageContentMessage"], [class*="variantUser"]',
   itemTypeAttr: 'data-item-type', // "content" | "group"
   messageFooter: '[class*="MessageFooter"]',
+
+  // Since Nov 2026 paragraphs are <div class="_p_…"> rather than <p>.
+  paragraph: 'p, div[class^="_p_"], div[class*=" _p_"]',
 
   // Answer article
   answerArticle: 'article[class*="container"]',
@@ -247,7 +254,9 @@ function renderInlineChildren(node, origin) {
 function renderList(listEl, origin, depth) {
   const indent = '  '.repeat(depth);
   const ordered = listEl.tagName.toLowerCase() === 'ol';
-  let counter = 1;
+  // Sidekick writes numbered section titles as one-item lists (<ol start="2">), so keep the start number.
+  const start = parseInt(listEl.getAttribute('start') || '1', 10);
+  let counter = Number.isFinite(start) ? start : 1;
   const lines = [];
   for (const li of Array.from(listEl.children)) {
     if (li.tagName.toLowerCase() !== 'li') continue;
@@ -446,12 +455,27 @@ function renderShopifyqlTableCard(container) {
     const shown = rows.filter((cells) => cells[0] !== 'Summary').length;
     lines.push('');
     lines.push(`_Showing ${shown} of ${shown + more} rows. Sidekick's preview left out ${more} more, so they are not in this export._`);
+    const metricEl = qs(container, SELECTORS.metricCard);
+    const preEl = qs(container, SELECTORS.codeCardPre);
+    const query = metricEl ? decodeQueryParam(metricEl.getAttribute('query') || '') : preEl ? preEl.textContent : '';
+    const link = shopifyReportLink(query);
+    if (link) lines.push(link);
   }
   return CARD_TABLE_MARK + lines.join('\n');
 }
 
 function isCodeCard(el) {
   return el.matches && el.matches(SELECTORS.codeCard) || qs(el, SELECTORS.codeCard) !== null;
+}
+
+// Link to the same ShopifyQL in Shopify Analytics (what Sidekick's "See more" opens), where every row and column is
+// available. A card preview keeps only a few rows and can drop columns.
+function shopifyReportLink(query) {
+  if (!query || typeof location === 'undefined') return '';
+  const store = /^\/store\/[^/]+/.exec(location.pathname || '');
+  if (!store) return '';
+  const url = `${location.origin}${store[0]}/analytics/reports/explore?ql=${encodeURIComponent(query.trim())}`;
+  return `[Open the full report in Shopify Analytics](${url})`;
 }
 
 function renderCodeCard(el) {
@@ -467,17 +491,19 @@ function renderCodeCard(el) {
   }
   // A ShopifyQL metric card (a list of label and value pairs, such as a session funnel) read the same way.
   const metricEl = qs(container, SELECTORS.metricCard);
+  let chartNote = '';
   if (metricEl) {
     let metricMarkdown = renderMetricCard(metricEl);
-    if (metricMarkdown && !/Inline metric values were not captured/.test(metricMarkdown)) {
+    const noteMatch = /\n(_Sidekick drew this result as a chart[^\n]*)$/.exec(metricMarkdown || '');
+    if (noteMatch) chartNote = noteMatch[1];
+    if (metricMarkdown && !/values are not in the page/.test(metricMarkdown)) {
       // The card's title is in its header, outside the metric element. Use it, as a heading so the Tables tab can
       // label the sheet from it.
       // The query is already in the card's own code block, a sibling that is rendered separately.
       metricMarkdown = metricMarkdown.replace(/```shopifyql[\s\S]*?```\n?/, '');
       const titleEl = qs(container, SELECTORS.cardHeaderTitle);
       const title = titleEl ? cleanText(titleEl.textContent) : '';
-      if (title) metricMarkdown = metricMarkdown.replace(/^\*\*[^\n]*\*\*/, `#### ${title}`);
-      else metricMarkdown = metricMarkdown.replace(/^\*\*([^\n]*)\*\*/, '#### $1');
+      if (title) metricMarkdown = metricMarkdown.replace(/^#### [^\n]*/, `#### ${title}`);
       return CARD_TABLE_MARK + metricMarkdown;
     }
   }
@@ -490,6 +516,14 @@ function renderCodeCard(el) {
   if (codeEl) {
     const cls = Array.from(codeEl.classList).find((c) => c.startsWith('language-'));
     if (cls) lang = cls.replace('language-', '');
+  }
+  if (chartNote) {
+    // A chart card with no readable values: its title, then the note. The query is already in its own block.
+    const titleEl = qs(container, SELECTORS.cardHeaderTitle);
+    const title = titleEl ? cleanText(titleEl.textContent) : '';
+    const link = shopifyReportLink(decodeQueryParam(metricEl.getAttribute('query') || ''));
+    const note = link ? `${chartNote} ${link}` : chartNote;
+    return title ? `#### ${title}\n\n${note}` : note;
   }
   return ['```' + lang, text, '```'].join('\n');
 }
@@ -546,7 +580,8 @@ function renderMetricCard(el) {
   const title = getMetricCardTitle(el);
   const query = el.getAttribute('query') || '';
 
-  const lines = [`**${title}**`];
+  // A #### heading so the Tables view names the sheet after the card.
+  const lines = [`#### ${title}`];
   if (query) {
     lines.push('```shopifyql');
     lines.push(softWrapShopifyQL(decodeQueryParam(query)));
@@ -574,11 +609,71 @@ function renderMetricCard(el) {
       lines.push('| --- | --- |');
       lines.push(...rows);
     }
-  } else if (query) {
-    lines.push('_Inline metric values were not captured._');
+  } else {
+    const chart = readChartBars(el);
+    if (chart) {
+      // One series: "Value". Several (a comparison): each series is named after its period.
+      const heads = chart.series.length === 1 ? ['Value'] : chart.series;
+      lines.push(`| Label | ${heads.map(escapePipes).join(' | ')} |`);
+      lines.push(`| ${Array(heads.length + 1).fill('---').join(' | ')} |`);
+      chart.rows.forEach((cells) => lines.push(`| ${cells.map(escapePipes).join(' | ')} |`));
+    } else if (query) {
+      lines.push("_Sidekick drew this result as a chart and its values are not in the page. Turn on \"Return full tables in the reply\" in the Prompts tab, or ask Sidekick for the table._");
+    }
   }
 
   return lines.join('\n');
+}
+
+// Collects every aria-label in an element's tree, shadow roots included.
+function collectAriaLabels(root, out) {
+  if (!root) return out;
+  const scope = root.shadowRoot || root;
+  const nodes = scope.querySelectorAll ? scope.querySelectorAll('*') : [];
+  nodes.forEach((node) => {
+    const label = node.getAttribute && node.getAttribute('aria-label');
+    if (label) out.push(label);
+    if (node.shadowRoot) collectAriaLabels(node, out);
+  });
+  return out;
+}
+
+// Since Nov 2026 Sidekick often draws a ShopifyQL result as a bar chart instead of a table. The rows only exist as
+// aria-labels: a group label ("Desktop: 27 Oct – 25 Nov 2026 319,27 Sept – 26 Oct 2026 0") followed by one label per
+// series bar ("27 Oct – 25 Nov 2026 319"). Returns { series, rows } with one value column per series (a comparison
+// chart has two), or null when the card has no such labels (a line chart).
+function readChartBars(el) {
+  const series = [];
+  const rows = [];
+  const seen = new Set();
+  let current = null;
+  collectAriaLabels(el, []).forEach((raw) => {
+    const text = cleanText(raw);
+    const group = /^(.+?):\s+\S/.exec(text);
+    if (group) {
+      const label = group[1].trim();
+      current = seen.has(label) ? null : { label, values: {} };
+      if (current) {
+        seen.add(label);
+        rows.push(current);
+      }
+      return;
+    }
+    const bar = /^(.*\S)\s+(-?[$]?[\d.,]+%?)$/.exec(text);
+    if (!current || !bar) return;
+    const name = bar[1];
+    if (!series.includes(name)) series.push(name);
+    if (!(name in current.values)) current.values[name] = bar[2];
+  });
+  const usable = rows.filter((r) => Object.keys(r.values).length > 0);
+  if (usable.length === 0 || series.length === 0) return null;
+  return { series, rows: usable.map((r) => [r.label, ...series.map((name) => r.values[name] || '')]) };
+}
+
+// [label, value] pairs for a single-series chart (kept for callers and tests that want the simple shape).
+function readChartBarRows(el) {
+  const chart = readChartBars(el);
+  return chart ? chart.rows.map((r) => [r[0], r[1]]) : [];
 }
 
 function isGenericCard(el) {
@@ -672,7 +767,7 @@ function isKnownBlock(el) {
   if (el.matches && el.matches(SELECTORS.codeCard)) return true;
   if (isMetricCard(el)) return true;
   if (isReportLink(el)) return true;
-  if (tag === 'p') {
+  if (el.matches && el.matches(SELECTORS.paragraph)) {
     // Custom elements like <s-internal-link> and <s-shopifyql-metric-card>
     // don't trigger the browser's auto-close-<p>-before-block-content rule,
     // so a <p> can still end up directly wrapping a card. Only treat the
@@ -709,7 +804,7 @@ function renderBlock(el, origin) {
   if (isReportLink(el)) return renderReportLinkCard(el, origin);
   if (tag === 'pre') return renderCodeCard(el);
 
-  if (tag === 'p') {
+  if (el.matches && el.matches(SELECTORS.paragraph)) {
     const special = renderSpecialCardIfAny(el, origin);
     if (special !== null) return special;
     return cleanText(renderInlineChildren(el, origin));
