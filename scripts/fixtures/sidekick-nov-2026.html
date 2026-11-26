@@ -1,0 +1,107 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Test store · Home · Shopify</title>
+<style>
+  body { margin: 0; font: 14px sans-serif; }
+  #sidekick { position: fixed; right: 0; top: 0; width: 380px; height: 600px; display: flex; flex-direction: column; }
+  .Polaris-Scroll { flex: 1; overflow-y: auto; position: relative; }
+  .spacer { position: relative; }
+  [data-sk-virtualized-row] { position: absolute; left: 0; right: 0; }
+</style></head>
+<body>
+<!-- Home page prompt box with the same name as Sidekick's (the November Insert bug) -->
+<textarea name="sidekickMessage" enterkeyhint="send" id="homeBox"></textarea>
+<aside id="sidekick" aria-label="Sidekick">
+  <button class="_ConversationTitleButton_x"><span class="s-internal-heading">Test chat</span></button>
+  <div class="Polaris-Scroll" role="list" id="scroller"><div class="spacer" id="spacer"></div></div>
+  <label data-value=""><textarea name="sidekickMessage" enterkeyhint="send" id="chatBox"></textarea></label>
+</aside>
+<script>
+// Records what React would see: the value at each input event.
+window.__inputs = { homeBox: [], chatBox: [] }
+for (const id of ['homeBox', 'chatBox']) document.getElementById(id).addEventListener('input', (e) => window.__inputs[id].push(e.target.value))
+
+const ROW_H = 900
+const turns = [
+  { id: 'aaa-1', prompt: 'Give me sessions by device, last 30 days vs previous', answer: (a) => {
+      a.p('Here are sessions by device for both periods.')
+      a.ol(2, 'Device table')
+      a.barCard('Sessions by device type', 'FROM sessions SHOW sessions GROUP BY session_device_type', [
+        'Desktop: 27 Oct – 25 Nov 2026 1,319,27 Sept – 26 Oct 2026 12', '27 Oct – 25 Nov 2026 1,319', '27 Sept – 26 Oct 2026 12',
+        'Mobile: 27 Oct – 25 Nov 2026 4,27 Sept – 26 Oct 2026 0', '27 Oct – 25 Nov 2026 4', '27 Sept – 26 Oct 2026 0'])
+  } },
+  { id: 'bbb-2', prompt: 'Show sessions by day as a table', answer: (a) => {
+      a.p('Here is the daily table.')
+      a.tableCard('Sessions by day', 'FROM sessions SHOW sessions TIMESERIES day', ['Day', 'Sessions'],
+        [['27 Oct – 25 Nov 2026', '320'], ['27 Oct 2026', '0'], ['28 Oct 2026', '9'], ['29 Oct 2026', '29'], ['30 Oct 2026', '12']], 25)
+  } },
+  { id: 'ccc-3', prompt: 'Full performance table please', answer: (a) => {
+      a.p('Performance by segment.')
+      a.ol(2, 'Performance table')
+      a.mdTable(['Segment', 'Sessions', 'Conversion rate', 'Revenue'], [['Desktop', '1,319', '2.5%', '$1,020.50'], ['Mobile', '4', '0%', '$0.00']])
+      a.listCard('Online store conversion funnel', 'FROM sessions SHOW sessions, conversion_rate', [['Sessions', '320'], ['Conversion rate', '0%']])
+  } },
+  { id: 'ddd-4', prompt: 'Thanks, what should I fix first?', answer: (a) => { a.p('Finish payment setup first.'); a.p('Then check product descriptions.') } },
+]
+
+const spacer = document.getElementById('spacer'), scroller = document.getElementById('scroller')
+spacer.style.height = turns.length * ROW_H + 'px'
+
+function el(tag, attrs = {}, kids = []) {
+  const n = document.createElement(tag)
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v)
+  for (const k of kids) n.append(typeof k === 'string' ? document.createTextNode(k) : k)
+  return n
+}
+function article(node) { return el('div', { 'data-item-type': 'content' }, [el('article', { class: '_container_1aba2_1' }, [node])]) }
+
+function renderTurn(t, i) {
+  const row = el('div', { 'data-sk-virtualized-row': '' })
+  row.style.top = i * ROW_H + 'px'
+  const turn = el('div', { class: '_Turn_y8wl9_63' })
+  turn.append(el('div', { class: '_UserMessage_1xjch_9', 'data-message-render-id': t.id }, [
+    el('div', { class: '_MessageBubble_tvqu5_1 _variantUser_tvqu5_20' }, [el('span', {}, [t.prompt])])]))
+  const a = {
+    p: (text) => turn.append(article(el('div', { class: '_p_m8r6h_159' }, [text]))),
+    ol: (start, text) => turn.append(article(el('ol', { start: String(start) }, [el('li', {}, [text])]))),
+    mdTable: (head, rows) => turn.append(article(el('div', { class: '_tableContainer_x' }, [el('table', {}, [
+      el('thead', {}, [el('tr', {}, head.map((h) => el('th', {}, [h])))]),
+      el('tbody', {}, rows.map((r) => el('tr', {}, r.map((c) => el('td', {}, [c])))))])]))),
+    card: (title, query, fill, more) => {
+      const metric = el('s-shopifyql-metric-card', { query })
+      const inner = el('div')
+      metric.attachShadow({ mode: 'open' }).append(inner)
+      // Like Sidekick: the chart or table draws a moment after the row mounts.
+      setTimeout(() => fill(inner), 300)
+      turn.append(article(el('div', { class: '_BaseCard_x' }, [
+        el('div', { class: '_CodeCard_x' }, [el('pre', {}, [query])]),
+        el('div', { class: '_CodeCardBody_x' }, [el('div', { class: '_BaseCard_y' }, [
+          el('div', { class: '_CardHeader_y' }, [el('div', { class: '_CardHeaderTitle_y' }, [el('h6', {}, [el('s-internal-text', {}, [title])])])]),
+          el('div', {}, [metric, ...(more ? [el('s-internal-paragraph', {}, [`+${more} more`])] : [])])])])])))
+    },
+    barCard: (title, query, labels) => a.card(title, query, (inner) => { inner.append(el('svg')); labels.forEach((l) => inner.append(el('div', { 'aria-label': l }))) }),
+    tableCard: (title, query, head, rows, more) => a.card(title, query, (inner) => inner.append(el('s-table', {}, [
+      el('s-table-header-row', {}, head.map((h) => el('s-table-header', {}, [h]))),
+      el('s-table-body', {}, rows.map((r) => el('s-table-row', {}, r.map((c) => el('s-table-cell', {}, [c])))))])), more),
+    listCard: (title, query, items) => a.card(title, query, (inner) => inner.append(el('ul', { class: 'list-container' },
+      items.map(([l, v]) => el('li', { class: 'list-item' }, [el('span', { class: 'label-text' }, [l]), el('span', { class: 'list-item-value' }, [v])]))))),
+  }
+  t.answer(a)
+  row.append(turn)
+  return row
+}
+
+// Virtualisation like Sidekick's: only rows near the viewport are mounted.
+const mounted = new Map()
+function update() {
+  const top = scroller.scrollTop, bottom = top + scroller.clientHeight
+  turns.forEach((t, i) => {
+    const visible = i * ROW_H < bottom + 100 && (i + 1) * ROW_H > top - 100
+    if (visible && !mounted.has(i)) { const r = renderTurn(t, i); spacer.append(r); mounted.set(i, r) }
+    if (!visible && mounted.has(i)) { mounted.get(i).remove(); mounted.delete(i) }
+  })
+}
+scroller.addEventListener('scroll', update)
+scroller.scrollTop = scroller.scrollHeight
+update()
+</script>
+</body></html>
