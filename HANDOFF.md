@@ -10,8 +10,12 @@
   - Chart cards: Sidekick now often draws ShopifyQL results as bar charts. Rows are read from each bar's `aria-label` (`label: period value`). Line charts carry no values in the DOM, so the export notes that and points to the full-tables option.
   - Metric cards use a `####` heading so the Tables view names the sheet after the card.
   - Rescan button in the Tables view.
-- **Verified:** all `scripts/*.test.mjs` pass (2 new chart tests). On the live 2026 Design Lab store: two prompts split into two exchanges with the new selector, bar chart rows read for 4 of 5 cards (the by-day line chart has none), and Insert fills the Sidekick chat box (not sent).
-- **Not verified:** the full panel loaded as an extension end to end (scraper run through the panel, Tables view, .xlsx download).
+  - Virtualised chat: Sidekick now only mounts turns near the viewport (`[data-sk-virtualized-row]` inside `.Polaris-Scroll[role="list"]`; `[role="log"]` is gone). The scraper scrolls from the top, reads each mounted row and merges turns by the user message's render id. It waits for chart cards to draw bars (up to 2 s, once per line chart). A full scrape of a 5-prompt chat takes about 12 s.
+  - Paragraphs are now `div._p_…`, not `<p>`, so all answer prose had been dropped. Read again.
+  - Numbered section titles are one-item `<ol start="N">` lists; the start number is kept.
+  - Tables view: a table with no heading is named after the short title line above it, else `P<n> <prompt>`. Sheet names are trimmed.
+- **Verified:** all `scripts/*.test.mjs` pass. On the live 2026 Design Lab store, with the extension's own parser, scraper, table and Insert code run on the page (Claude in Chrome cannot click inside the side panel): a 5-prompt chat with bar charts, a line chart, a funnel card, a full-tables library prompt (Device and Channel Efficiency) and a text-only answer gave 5 exchanges, all prose and 13 tables, in both full-screen and side-panel Sidekick. Insert filled the Sidekick box, not the home-page box, in both layouts. The .xlsx builder output was checked locally (valid zip, unique escaped sheet names).
+- **Not verified:** clicking through the real side panel (Tom to check), and a downloaded .xlsx opened in Excel.
 - **Next step (Tom):** reload the unpacked copy from `~/Documents/SideMark` on this branch and check Export, Tables and Insert; then merge and publish 2.1.2.
 
 ## Previous (20 October 2026, Claude Code, Sonnet 5.5)

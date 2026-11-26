@@ -24,6 +24,10 @@ var SELECTORS = {
   // Root / scope
   root: ['#sidekick', '[aria-label="Sidekick"]', '[id*="sidekick"]'],
   log: ['[role="log"]', '#sidekick-chat-body'],
+  // Since Nov 2026 the chat is virtualised: only turns near the viewport are mounted, one per row.
+  scroller: ['[role="list"].Polaris-Scroll', '[role="log"]', '#sidekick-chat-body'],
+  virtualRow: '[data-sk-virtualized-row]',
+  userRenderId: 'data-message-render-id',
   conversationTitleButton: 'button[class*="ConversationTitleButton"]',
   conversationTitleHeading: '.s-internal-heading',
   headerHeadingFallback: 'h1, h2, h3',
@@ -33,6 +37,9 @@ var SELECTORS = {
   userMessageContent: '[class*="UserMessageContentMessage"], [class*="variantUser"]',
   itemTypeAttr: 'data-item-type', // "content" | "group"
   messageFooter: '[class*="MessageFooter"]',
+
+  // Since Nov 2026 paragraphs are <div class="_p_…"> rather than <p>.
+  paragraph: 'p, div[class^="_p_"], div[class*=" _p_"]',
 
   // Answer article
   answerArticle: 'article[class*="container"]',
@@ -247,7 +254,9 @@ function renderInlineChildren(node, origin) {
 function renderList(listEl, origin, depth) {
   const indent = '  '.repeat(depth);
   const ordered = listEl.tagName.toLowerCase() === 'ol';
-  let counter = 1;
+  // Sidekick writes numbered section titles as one-item lists (<ol start="2">), so keep the start number.
+  const start = parseInt(listEl.getAttribute('start') || '1', 10);
+  let counter = Number.isFinite(start) ? start : 1;
   const lines = [];
   for (const li of Array.from(listEl.children)) {
     if (li.tagName.toLowerCase() !== 'li') continue;
@@ -493,8 +502,13 @@ function renderCodeCard(el) {
     const cls = Array.from(codeEl.classList).find((c) => c.startsWith('language-'));
     if (cls) lang = cls.replace('language-', '');
   }
-  const block = ['```' + lang, text, '```'].join('\n');
-  return chartNote ? `${block}\n\n${chartNote}` : block;
+  if (chartNote) {
+    // A chart card with no readable values: its title, then the note. The query is already in its own block.
+    const titleEl = qs(container, SELECTORS.cardHeaderTitle);
+    const title = titleEl ? cleanText(titleEl.textContent) : '';
+    return title ? `#### ${title}\n\n${chartNote}` : chartNote;
+  }
+  return ['```' + lang, text, '```'].join('\n');
 }
 
 function isMetricCard(el) {
@@ -713,7 +727,7 @@ function isKnownBlock(el) {
   if (el.matches && el.matches(SELECTORS.codeCard)) return true;
   if (isMetricCard(el)) return true;
   if (isReportLink(el)) return true;
-  if (tag === 'p') {
+  if (el.matches && el.matches(SELECTORS.paragraph)) {
     // Custom elements like <s-internal-link> and <s-shopifyql-metric-card>
     // don't trigger the browser's auto-close-<p>-before-block-content rule,
     // so a <p> can still end up directly wrapping a card. Only treat the
@@ -750,7 +764,7 @@ function renderBlock(el, origin) {
   if (isReportLink(el)) return renderReportLinkCard(el, origin);
   if (tag === 'pre') return renderCodeCard(el);
 
-  if (tag === 'p') {
+  if (el.matches && el.matches(SELECTORS.paragraph)) {
     const special = renderSpecialCardIfAny(el, origin);
     if (special !== null) return special;
     return cleanText(renderInlineChildren(el, origin));

@@ -1037,15 +1037,31 @@ function extractTablesFromExchange(exchange) {
   const lines = body.split('\n');
   const tables = [];
   let currentHeading = null;
+  // A short title line (often a numbered section such as "2. Performance table") also names the tables below it,
+  // like a heading, so sheets are not all called "Prompt N".
+  let inFence = false;
   let i = 0;
 
   while (i < lines.length) {
     const line = lines[i];
+    if (line.trim().startsWith('```')) {
+      inFence = !inFence;
+      i++;
+      continue;
+    }
+    if (inFence) {
+      i++;
+      continue;
+    }
     const headingMatch = line.match(/^#{1,6}\s+(.*)/);
     if (headingMatch) {
       currentHeading = headingMatch[1].trim();
       i++;
       continue;
+    }
+    const plain = stripMarkdownEmphasis(line.replace(/^\s*(\d+\.|-)\s+/, '')).trim();
+    if (plain && !isTableRowLine(line) && plain.length <= 60 && !/[.:]$/.test(plain)) {
+      currentHeading = plain;
     }
 
     if (isTableRowLine(line) && lines[i + 1] && isTableSeparatorLine(lines[i + 1])) {
@@ -1056,7 +1072,7 @@ function extractTablesFromExchange(exchange) {
         j++;
       }
       tables.push({
-        label: currentHeading || `Prompt ${exchange.index}`,
+        label: currentHeading || `P${exchange.index} ${(exchange.userPrompt || '').replace(/\s+/g, ' ').trim()}`.trim(),
         lines: tableLines,
       });
       i = j;
@@ -1247,7 +1263,7 @@ function xmlEsc(s) {
 }
 
 function safeSheetName(name) {
-  return name.replace(/[\[\]:*?/\\]/g, '_').slice(0, 31);
+  return name.replace(/[\[\]:*?/\\]/g, '_').slice(0, 31).trim() || 'Sheet';
 }
 
 function tableLinesToSheetXml(lines) {

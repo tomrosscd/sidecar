@@ -181,3 +181,14 @@ test('notes a chart card whose values are not in the page', () => {
   const md = markdownFor({ title: 'Sessions by day', query: QUERY, bars: [] })
   assert.match(md, /values are not in the page/)
 })
+
+test('reads November 2026 paragraphs (div._p_) and keeps numbered section starts', () => {
+  const dom = setup()
+  const doc = dom.window.document
+  const article = doc.createElement('article')
+  article.innerHTML = '<div class="_p_m8r6h_159">Here are both tables.</div><ol start="2"><li>Performance table</li></ol>'
+  doc.body.append(article)
+  const md = dom.window.articleToMarkdown(article, 'https://admin.shopify.com')
+  assert.match(md, /^Here are both tables\./)
+  assert.match(md, /^2\. Performance table$/m)
+})

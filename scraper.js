@@ -19,14 +19,19 @@
   }
 
   const log = qsAny(root, SELECTORS.log) || qsAny(document, SELECTORS.log) || root;
-
-  await forceRenderAllTurns(log);
-  stripNoise(log);
+  const scroller = qsAny(root, SELECTORS.scroller) || log;
 
   const title = getConversationTitle(root);
   const storeHandle = getStoreHandle(window.location.href);
 
-  const exchanges = extractExchanges(log, origin, includeReasoningLabels);
+  let exchanges;
+  if (qs(root, SELECTORS.virtualRow)) {
+    exchanges = await collectVirtualisedExchanges(root, scroller, origin, includeReasoningLabels);
+  } else {
+    await forceRenderAllTurns(scroller);
+    stripNoise(log);
+    exchanges = extractExchanges(log, origin, includeReasoningLabels);
+  }
 
   return {
     ok: true,
@@ -37,6 +42,66 @@
   };
 
   // -- helpers (scoped to this IIFE) ----------------------------------------
+
+  // Sidekick unmounts turns that scroll out of view, so no single pass sees the whole chat. Step through the
+  // scroller from the top, read every mounted row, and keep each turn once (keyed by its user message's render id,
+  // keeping the longest capture, since cards fill in after they mount). Order is the order rows were first seen.
+  async function collectVirtualisedExchanges(rootEl, scrollEl, pageOrigin, includeReasoning) {
+    const byKey = new Map();
+    const originalScrollTop = scrollEl.scrollTop;
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    // A remounted result card redraws its chart or table a moment later. Wait (up to 3 s) until every mounted card
+    // has drawn something, so its rows can be read.
+    // An empty chart frame draws first and the bars about half a second later, so wait for rows, not just an svg.
+    // A line chart never gets readable rows: remember it (by its query) after one timeout so it costs that once.
+    const gaveUp = new Set();
+    const cardKey = (card) => card.getAttribute('query') || '';
+    const cardReady = (card) =>
+      gaveUp.has(cardKey(card)) ||
+      pierceShadowQueryFirst(card, 's-table, ul.list-container') ||
+      readChartBarRows(card).length > 0;
+    const waitForCards = async () => {
+      let pending = qsa(rootEl, SELECTORS.metricCard).filter((card) => !cardReady(card));
+      for (let waited = 0; waited < 2000 && pending.length; waited += 150) {
+        // eslint-disable-next-line no-await-in-loop
+        await wait(150);
+        pending = pending.filter((card) => !cardReady(card));
+      }
+      pending.forEach((card) => gaveUp.add(cardKey(card)));
+    };
+
+    const readRows = () => {
+      qsa(rootEl, SELECTORS.virtualRow).forEach((row) => {
+        const userEl = qs(row, SELECTORS.userMessageRole);
+        const key = (userEl && userEl.getAttribute(SELECTORS.userRenderId)) || `row:${cleanText(row.textContent).slice(0, 80)}`;
+        stripNoise(row);
+        const [exchange] = extractExchanges(row, pageOrigin, includeReasoning);
+        if (!exchange) return;
+        const previous = byKey.get(key);
+        if (!previous || exchange.markdown.length > previous.markdown.length) byKey.set(key, exchange);
+      });
+    };
+
+    scrollEl.scrollTop = 0;
+    await wait(400);
+    const step = Math.max(200, Math.floor(scrollEl.clientHeight * 0.6));
+    for (let guard = 0; guard < 400; guard += 1) {
+      // eslint-disable-next-line no-await-in-loop
+      await waitForCards();
+      readRows();
+      if (scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 2) break;
+      scrollEl.scrollTop += step;
+      // eslint-disable-next-line no-await-in-loop
+      await wait(250);
+    }
+    await waitForCards();
+    readRows();
+    scrollEl.scrollTop = originalScrollTop;
+
+    const list = Array.from(byKey.values());
+    return list.map((exchange, i) => ({ ...exchange, index: i + 1, isLatest: i === list.length - 1 }));
+  }
 
   async function forceRenderAllTurns(logEl) {
     const originalScrollTop = logEl.scrollTop;
